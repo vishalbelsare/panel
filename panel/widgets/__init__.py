@@ -31,7 +31,7 @@ from .input import (  # noqa
     PasswordInput,
     TextAreaInput,
 )
-from .misc import Audio, FileDownload, VideoStream # noqa
+from .misc import Audio, FileDownload, JSONEditor, VideoStream # noqa
 from .player import DiscretePlayer, Player # noqa
 from .slider import ( # noqa
     DateSlider, DateRangeSlider, DiscreteSlider, FloatSlider,
