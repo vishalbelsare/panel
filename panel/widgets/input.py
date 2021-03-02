@@ -381,7 +381,7 @@ class ArrayInput(LiteralInput):
         return msg
 
     def _process_param_change(self, msg):
-        if 'value' in msg:
+        if 'value' in msg and msg['value'] is not None:
             msg['value'] = msg['value'].tolist()
         return super()._process_param_change(msg)
 
