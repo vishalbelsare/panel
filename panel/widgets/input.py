@@ -11,6 +11,8 @@ from six import string_types
 
 import param
 
+import numpy as np
+
 from bokeh.models.widgets import (
     CheckboxGroup as _BkCheckboxGroup, ColorPicker as _BkColorPicker,
     DatePicker as _BkDatePicker, Div as _BkDiv, TextInput as _BkTextInput,
@@ -375,7 +377,6 @@ class ArrayInput(LiteralInput):
     def _process_property_change(self, msg):
         msg = super()._process_property_change(msg)
         if 'value' in msg and isinstance(msg['value'], list):
-            import numpy as np
             msg['value'] = np.asarray(msg['value'])
         return msg
 
