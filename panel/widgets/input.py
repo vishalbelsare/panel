@@ -370,6 +370,21 @@ class LiteralInput(Widget):
         return msg
 
 
+class ArrayInput(LiteralInput):
+
+    def _process_property_change(self, msg):
+        msg = super()._process_property_change(msg)
+        if 'value' in msg and isinstance(msg['value'], list):
+            import numpy as np
+            msg['value'] = np.asarray(msg['value'])
+        return msg
+
+    def _process_param_change(self, msg):
+        if 'value' in msg:
+            msg['value'] = msg['value'].tolist()
+        return super()._process_param_change(msg)
+
+
 class DatetimeInput(LiteralInput):
     """
     DatetimeInput allows declaring Python literals using a text
@@ -451,9 +466,6 @@ class DatetimeRangeInput(CompositeWidget):
 
     end = param.Date(default=None)
 
-    format = param.String(default='%Y-%m-%d %H:%M:%S', doc="""
-        Datetime format used for parsing and formatting the datetime.""")
-
     _composite_type = Column
 
     def __init__(self, **params):
@@ -492,14 +504,14 @@ class DatetimeRangeInput(CompositeWidget):
         finally:
             self._updating = False
 
-    @param.depends('value', 'start', 'end', 'name', 'format', watch=True)
+    @param.depends('value', 'start', 'end', 'name', watch=True)
     def _update_widgets(self):
         if self._updating:
             return
         try:
             self._updating = True
-            self._start.param.set_param(value=self.value[0], start=self.start, end=self.end, format=self.format)
-            self._end.param.set_param(value=self.value[1], start=self.start, end=self.end, format=self.format)
+            self._start.param.set_param(value=self.value[0], start=self.start, end=self.end)
+            self._end.param.set_param(value=self.value[1], start=self.start, end=self.end)
         finally:
             self._updating = False
 

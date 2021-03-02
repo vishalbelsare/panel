@@ -31,6 +31,7 @@ from .input import (  # noqa
     Spinner,
     PasswordInput,
     TextAreaInput,
+    ArrayInput,
 )
 from .misc import Audio, FileDownload, VideoStream # noqa
 from .player import DiscretePlayer, Player # noqa
