@@ -154,6 +154,9 @@ class Syncable(Renderable):
             self._callbacks.append(watcher)
 
     def _link_props(self, model, properties, doc, root, comm=None):
+        properties = list(properties)
+        if isinstance(model, LayoutDOM):
+            properties += ['css_classes', 'visible']
         ref = root.ref['id']
         if config.embed:
             return
