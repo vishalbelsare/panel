@@ -1,0 +1,9 @@
+<map id="inheritanceed454282a2" name="inheritanceed454282a2">
+<area shape="rect" id="node1" title="Base class for all class types that have Bokeh properties." alt="" coords="65,4,248,25"/>
+<area shape="rect" id="node2" title="Base class for all objects stored in Bokeh &#160;|Document| instances." alt="" coords="347,44,468,64"/>
+<area shape="rect" id="node6" title="The base class for layoutable components." alt="" coords="506,44,703,64"/>
+<area shape="rect" id="node3" title="A mixin class to provide an interface for registering and" alt="" coords="4,44,309,64"/>
+<area shape="rect" id="node4" title="A mixin class to provide an interface for registering and" alt="" coords="11,83,302,104"/>
+<area shape="rect" id="node5" title="A component which size is determined by its HTML content." alt="" coords="741,44,926,64"/>
+<area shape="rect" id="node7" href="#panel.models.terminal.Terminal" target="_top" title="Custom Terminal Model" alt="" coords="964,44,1148,64"/>
+</map>

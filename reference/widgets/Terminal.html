@@ -1,0 +1,1452 @@
+
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Terminal — Panel 0.12.0 documentation</title>
+<link href="../../_static/css/theme.css" rel="stylesheet"/>
+<link href="../../_static/css/index.c5995385ac14fb8791e8eb36b4908be2.css" rel="stylesheet"/>
+<link href="../../_static/vendor/fontawesome/5.13.0/css/all.min.css" rel="stylesheet"/>
+<link as="font" crossorigin="" href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2" rel="preload" type="font/woff2"/>
+<link as="font" crossorigin="" href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2" rel="preload" type="font/woff2"/>
+<link href="../../_static/pygments.css" rel="stylesheet" type="text/css">
+<link href="../../_static/basic.css" rel="stylesheet" type="text/css">
+<link href="../../_static/togglebutton.css" rel="stylesheet" type="text/css">
+<link href="../../_static/mystnb.css" rel="stylesheet" type="text/css"/>
+<link href="../../_static/graphviz.css" rel="stylesheet" type="text/css"/>
+<link href="../../_static/nbsite.css" rel="stylesheet" type="text/css"/>
+<link href="../../_static/css/custom.css" rel="stylesheet" type="text/css"/>
+<link as="script" href="../../_static/js/index.1c5a1a01449ed65a7b51.js" rel="preload"/>
+<script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+<script src="../../_static/jquery.js"></script>
+<script src="../../_static/underscore.js"></script>
+<script src="../../_static/doctools.js"></script>
+<script src="../../_static/togglebutton.js"></script>
+<script>var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+<link href="../../_static/favicon.ico" rel="shortcut icon">
+<link href="../../genindex.html" rel="index" title="Index"/>
+<link href="../../search.html" rel="search" title="Search"/>
+<link href="TextAreaInput.html" rel="next" title="Textareainput"/>
+<link href="Tabulator.html" rel="prev" title="Tabulator"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="en" name="docsearch:language"/>
+</link></link></link></link></head>
+<body data-offset="80" data-spy="scroll" data-target="#bd-toc-nav">
+<div class="container-fluid" id="banner"></div>
+<nav class="navbar navbar-dark navbar-expand-lg bg-dark fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+<div id="navbar-start">
+<a class="navbar-brand" href="../../index.html">
+<img alt="logo" class="logo" src="../../_static/logo_horizontal.png"/>
+</a>
+</div>
+<button aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-target="#navbar-collapsible" data-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<div class="col-lg-9 collapse navbar-collapse" id="navbar-collapsible">
+<div class="mr-auto" id="navbar-center">
+<div class="navbar-center-item">
+<ul class="navbar-nav" id="navbar-main-elements">
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../../getting_started/index.html">
+  Getting Started
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../../user_guide/index.html">
+  User Guide
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../../gallery/index.html">
+  Gallery
+ </a>
+</li>
+<li class="toctree-l1 current active nav-item">
+<a class="reference internal nav-link" href="../index.html">
+  Reference Gallery
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../../developer_guide/index.html">
+  Developers
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../../api/index.html">
+  API
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../../releases.html">
+  Releases
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../../FAQ.html">
+  FAQ
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../../about/index.html">
+  About
+ </a>
+</li>
+</ul>
+</div>
+</div>
+<div id="navbar-end">
+<div class="navbar-end-item">
+<ul aria-label="Icon Links" class="navbar-nav" id="navbar-icon-links">
+<li class="nav-item">
+<a class="nav-link" href="https://github.com/holoviz/panel" rel="noopener" target="_blank" title="GitHub">
+<span><i class="fab fa-github-square"></i></span>
+<label class="sr-only">GitHub</label>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://twitter.com/Panel_Org" rel="noopener" target="_blank" title="Twitter">
+<span><i class="fab fa-twitter-square"></i></span>
+<label class="sr-only">Twitter</label>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://discourse.holoviz.org/" rel="noopener" target="_blank" title="Discourse">
+<span><i class="fab fa-discourse"></i></span>
+<label class="sr-only">Discourse</label>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<div class="container-xl">
+<div class="row">
+<!-- Only show if we have sidebars configured, else just a small margin  -->
+<div class="col-12 col-md-2 bd-sidebar"><form action="../../search.html" class="bd-search d-flex align-items-center" method="get">
+<i class="icon fas fa-search"></i>
+<input aria-label="Search the docs ..." autocomplete="off" class="form-control" id="search-input" name="q" placeholder="Search the docs ..." type="search"/>
+</form><nav aria-label="Main navigation" class="bd-links" id="bd-docs-nav">
+<div class="bd-toc-item active">
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/Alert.html">
+   Alert
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/Audio.html">
+   Audio
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/Bokeh.html">
+   Bokeh
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/DataFrame.html">
+   Dataframe
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/DeckGL.html">
+   Deckgl
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/ECharts.html">
+   Echarts
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/GIF.html">
+   Gif
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/HTML.html">
+   Html
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/HoloViews.html">
+   Holoviews
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/IDOM.html">
+   Idom
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/IPyWidget.html">
+   Ipywidget
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/JPG.html">
+   Jpg
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/JSON.html">
+   Json
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/LaTeX.html">
+   Latex
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/Markdown.html">
+   Markdown
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/Matplotlib.html">
+   Matplotlib
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/PDF.html">
+   Pdf
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/PNG.html">
+   Png
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/Param.html">
+   Param
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/Perspective.html">
+   Perspective
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/Plotly.html">
+   Plotly
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/SVG.html">
+   Svg
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/Str.html">
+   Str
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/Streamz.html">
+   Streamz
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/VTK.html">
+   Vtk
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/VTKJS.html">
+   Vtkjs
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/VTKVolume.html">
+   Vtkvolume
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/Vega.html">
+   Vega
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../panes/Video.html">
+   Video
+  </a>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="../layouts/Accordion.html">
+   Accordion
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../layouts/Card.html">
+   Card
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../layouts/Column.html">
+   Column
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../layouts/Divider.html">
+   Divider
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../layouts/FlexBox.html">
+   Flexbox
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../layouts/GridBox.html">
+   Gridbox
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../layouts/GridSpec.html">
+   Gridspec
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../layouts/GridStack.html">
+   Gridstack
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../layouts/Row.html">
+   Row
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../layouts/Tabs.html">
+   Tabs
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../layouts/WidgetBox.html">
+   Widgetbox
+  </a>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="../templates/Bootstrap.html">
+   Bootstrap
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../templates/FastGridTemplate.html">
+   Fastgridtemplate
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../templates/FastListTemplate.html">
+   Fastlisttemplate
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../templates/GoldenLayout.html">
+   Goldenlayout
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../templates/Material.html">
+   Material
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../templates/React.html">
+   React
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../templates/Vanilla.html">
+   Vanilla
+  </a>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="../indicators/BooleanStatus.html">
+   Booleanstatus
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../indicators/Dial.html">
+   Dial
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../indicators/Gauge.html">
+   Gauge
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../indicators/LoadingSpinner.html">
+   Loadingspinner
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../indicators/Number.html">
+   Number
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../indicators/Progress.html">
+   Progress
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../indicators/Tqdm.html">
+   Tqdm
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="../indicators/Trend.html">
+   Trend
+  </a>
+</li>
+</ul>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="Ace.html">
+   Ace
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="AutocompleteInput.html">
+   Autocompleteinput
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Button.html">
+   Button
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="CheckBoxGroup.html">
+   Checkboxgroup
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="CheckButtonGroup.html">
+   Checkbuttongroup
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Checkbox.html">
+   Checkbox
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="ColorPicker.html">
+   Colorpicker
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="CrossSelector.html">
+   Crossselector
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="DataFrame.html">
+   Dataframe
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="DatePicker.html">
+   Datepicker
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="DateRangeSlider.html">
+   Daterangeslider
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="DateSlider.html">
+   Dateslider
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="DatetimeInput.html">
+   Datetimeinput
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="DatetimePicker.html">
+   Datetimepicker
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="DatetimeRangeInput.html">
+   Datetimerangeinput
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="DatetimeRangePicker.html">
+   Datetimerangepicker
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="DiscretePlayer.html">
+   Discreteplayer
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="DiscreteSlider.html">
+   Discreteslider
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="EditableFloatSlider.html">
+   Editablefloatslider
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="EditableIntSlider.html">
+   Editableintslider
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="EditableRangeSlider.html">
+   Editablerangeslider
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="FileDownload.html">
+   Filedownload
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="FileInput.html">
+   Fileinput
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="FileSelector.html">
+   Fileselector
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="FloatInput.html">
+   Floatinput
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="FloatSlider.html">
+   Floatslider
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="IntInput.html">
+   Intinput
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="IntRangeSlider.html">
+   Intrangeslider
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="IntSlider.html">
+   Intslider
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="LiteralInput.html">
+   Literalinput
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="MenuButton.html">
+   Menubutton
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="MultiChoice.html">
+   Multichoice
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="MultiSelect.html">
+   Multiselect
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="PasswordInput.html">
+   Passwordinput
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Player.html">
+   Player
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="RadioBoxGroup.html">
+   Radioboxgroup
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="RadioButtonGroup.html">
+   Radiobuttongroup
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="RangeSlider.html">
+   Rangeslider
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Select.html">
+   Select
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="SpeechToText.html">
+   Speechtotext
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="StaticText.html">
+   Statictext
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Tabulator.html">
+   Tabulator
+  </a>
+</li>
+<li class="toctree-l1 current active">
+<a class="current reference internal" href="#">
+   Terminal
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="TextAreaInput.html">
+   Textareainput
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="TextInput.html">
+   Textinput
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="TextToSpeech.html">
+   Texttospeech
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Toggle.html">
+   Toggle
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="VideoStream.html">
+   Videostream
+  </a>
+</li>
+</ul>
+</div>
+</nav>
+</div>
+<div class="d-none d-xl-block col-xl-2 bd-toc">
+<div class="toc-item">
+<div class="tocsection onthispage pt-5 pb-3">
+<i class="fas fa-list"></i> On this page
+</div>
+<nav id="bd-toc-nav">
+<ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#terminal-widget">
+   Terminal Widget
+  </a>
+<ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#parameters">
+     Parameters:
+    </a>
+</li>
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#methods">
+     Methods
+    </a>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#terminal-subprocess">
+   Terminal Subprocess
+  </a>
+<ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#id1">
+     Parameters
+    </a>
+</li>
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#writing-strings-to-the-terminal">
+     Writing strings to the terminal
+    </a>
+</li>
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#writing-stdout-to-the-terminal">
+     Writing stdout to the terminal
+    </a>
+</li>
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#logging-to-the-terminal">
+     Logging to the terminal
+    </a>
+</li>
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#streaming-to-the-terminal">
+     Streaming to the terminal
+    </a>
+</li>
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#run-subprocess-and-direct-output-to-terminal">
+     Run SubProcess and direct output to Terminal
+    </a>
+</li>
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#clear-the-terminal">
+     Clear the Terminal
+    </a>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#run-an-interactive-process-in-the-terminal">
+   Run an Interactive Process in the Terminal
+  </a>
+</li>
+</ul>
+</nav>
+</div>
+<div class="toc-item">
+</div>
+<a href="https://mybinder.org/v2/gh/holoviz/panel/master?urlpath=lab/tree/examples/reference/widgets/Terminal">Open this example in Binder</a>
+</div>
+<main class="col-12 col-md-10 col-xl-8 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+<div>
+<div class="section" id="terminal">
+<span id="widgets-gallery-terminal"></span><h1>Terminal<a class="headerlink" href="#terminal" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference external" href="https://raw.githubusercontent.com/holoviz/panel/master/examples/reference/widgets/Terminal.ipynb">Download this notebook from GitHub (right-click to download).</a></p>
+<hr class="docutils"/>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">panel</span> <span class="k">as</span> <span class="nn">pn</span>
+
+<span class="n">pn</span><span class="o">.</span><span class="n">extension</span><span class="p">(</span><span class="s1">'terminal'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<script type="application/javascript">
+(function(root) {
+  function now() {
+    return new Date();
+  }
+
+  var force = true;
+
+  if (typeof root._bokeh_onload_callbacks === "undefined" || force === true) {
+    root._bokeh_onload_callbacks = [];
+    root._bokeh_is_loading = undefined;
+  }
+
+  if (typeof (root._bokeh_timeout) === "undefined" || force === true) {
+    root._bokeh_timeout = Date.now() + 5000;
+    root._bokeh_failed_load = false;
+  }
+
+  function run_callbacks() {
+    try {
+      root._bokeh_onload_callbacks.forEach(function(callback) {
+        if (callback != null)
+          callback();
+      });
+    } finally {
+      delete root._bokeh_onload_callbacks
+    }
+    console.debug("Bokeh: all callbacks have finished");
+  }
+
+  function load_libs(css_urls, js_urls, js_modules, callback) {
+    if (css_urls == null) css_urls = [];
+    if (js_urls == null) js_urls = [];
+    if (js_modules == null) js_modules = [];
+
+    root._bokeh_onload_callbacks.push(callback);
+    if (root._bokeh_is_loading > 0) {
+      console.debug("Bokeh: BokehJS is being loaded, scheduling callback at", now());
+      return null;
+    }
+    if (js_urls.length === 0 && js_modules.length === 0) {
+      run_callbacks();
+      return null;
+    }
+    console.debug("Bokeh: BokehJS not loaded, scheduling load and callback at", now());
+    root._bokeh_is_loading = css_urls.length + js_urls.length + js_modules.length;
+
+    function on_load() {
+      root._bokeh_is_loading--;
+      if (root._bokeh_is_loading === 0) {
+        console.debug("Bokeh: all BokehJS libraries/stylesheets loaded");
+        run_callbacks()
+      }
+    }
+
+    function on_error() {
+      console.error("failed to load " + url);
+    }
+
+    for (var i = 0; i < css_urls.length; i++) {
+      var url = css_urls[i];
+      const element = document.createElement("link");
+      element.onload = on_load;
+      element.onerror = on_error;
+      element.rel = "stylesheet";
+      element.type = "text/css";
+      element.href = url;
+      console.debug("Bokeh: injecting link tag for BokehJS stylesheet: ", url);
+      document.body.appendChild(element);
+    }
+
+    var skip = [];
+    if (window.requirejs) {
+      window.requirejs.config({'paths': {'xtermjs': 'https://unpkg.com/xterm@4.11.0/lib/xterm', 'xtermjsweblinks': 'https://unpkg.com/xterm-addon-web-links@0.4.0/lib/xterm-addon-web-links'}, 'shim': {'xtermjsweblinks': {'exports': 'WebLinksAddon', 'deps': ['xtermjs']}}});
+      
+      require(["xtermjs"], function(xtermjs) {
+	window.xtermjs = xtermjs
+      })
+      
+      require(["xtermjsweblinks"], function(WebLinksAddon) {
+	window.WebLinksAddon = WebLinksAddon
+      })
+      
+    }
+    if (((window['xtermjs'] !== undefined) && (!(window['xtermjs'] instanceof HTMLElement))) || window.requirejs) {
+      var urls = ['https://unpkg.com/xterm@4.11.0/lib/xterm.js', 'https://unpkg.com/xterm-addon-web-links@0.4.0/lib/xterm-addon-web-links.js'];
+      for (var i = 0; i < urls.length; i++) {
+        skip.push(urls[i])
+      }
+    }
+    for (var i = 0; i < js_urls.length; i++) {
+      var url = js_urls[i];
+      if (skip.indexOf(url) >= 0) { on_load(); continue; }
+      var element = document.createElement('script');
+      element.onload = on_load;
+      element.onerror = on_error;
+      element.async = false;
+      element.src = url;
+      console.debug("Bokeh: injecting script tag for BokehJS library: ", url);
+      document.head.appendChild(element);
+    }
+    for (var i = 0; i < js_modules.length; i++) {
+      var url = js_modules[i];
+      if (skip.indexOf(url) >= 0) { on_load(); continue; }
+      var element = document.createElement('script');
+      element.onload = on_load;
+      element.onerror = on_error;
+      element.async = false;
+      element.src = url;
+      element.type = "module";
+      console.debug("Bokeh: injecting script tag for BokehJS library: ", url);
+      document.head.appendChild(element);
+    }
+    if (!js_urls.length && !js_modules.length) {
+      on_load()
+    }
+  };
+
+  function inject_raw_css(css) {
+    const element = document.createElement("style");
+    element.appendChild(document.createTextNode(css));
+    document.body.appendChild(element);
+  }
+
+  var js_urls = ["https://unpkg.com/xterm@4.11.0/lib/xterm.js", "https://unpkg.com/xterm-addon-web-links@0.4.0/lib/xterm-addon-web-links.js", "https://cdn.bokeh.org/bokeh/release/bokeh-2.3.3.min.js", "https://cdn.bokeh.org/bokeh/release/bokeh-widgets-2.3.3.min.js", "https://cdn.bokeh.org/bokeh/release/bokeh-tables-2.3.3.min.js", "https://unpkg.com/@holoviz/panel@0.12.0/dist/panel.min.js"];
+  var js_modules = [];
+  var css_urls = ["https://unpkg.com/xterm@4.11.0/css/xterm.css", "https://unpkg.com/@holoviz/panel@0.12.0/dist/css/markdown.css", "https://unpkg.com/@holoviz/panel@0.12.0/dist/css/json.css", "https://unpkg.com/@holoviz/panel@0.12.0/dist/css/loading.css", "https://unpkg.com/@holoviz/panel@0.12.0/dist/css/dataframe.css", "https://unpkg.com/@holoviz/panel@0.12.0/dist/css/card.css", "https://unpkg.com/@holoviz/panel@0.12.0/dist/css/alerts.css", "https://unpkg.com/@holoviz/panel@0.12.0/dist/css/widgets.css"];
+  var inline_js = [
+    function(Bokeh) {
+      inject_raw_css("\n    .bk.pn-loading.arcs:before {\n      background-image: url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBzdHlsZT0ibWFyZ2luOiBhdXRvOyBiYWNrZ3JvdW5kOiBub25lOyBkaXNwbGF5OiBibG9jazsgc2hhcGUtcmVuZGVyaW5nOiBhdXRvOyIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIj4gIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjMyIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZT0iI2MzYzNjMyIgc3Ryb2tlLWRhc2hhcnJheT0iNTAuMjY1NDgyNDU3NDM2NjkgNTAuMjY1NDgyNDU3NDM2NjkiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+ICAgIDxhbmltYXRlVHJhbnNmb3JtIGF0dHJpYnV0ZU5hbWU9InRyYW5zZm9ybSIgdHlwZT0icm90YXRlIiByZXBlYXRDb3VudD0iaW5kZWZpbml0ZSIgZHVyPSIxcyIga2V5VGltZXM9IjA7MSIgdmFsdWVzPSIwIDUwIDUwOzM2MCA1MCA1MCI+PC9hbmltYXRlVHJhbnNmb3JtPiAgPC9jaXJjbGU+PC9zdmc+\")\n    }\n    ");
+    },
+    function(Bokeh) {
+      Bokeh.set_log_level("info");
+    },
+    function(Bokeh) {} // ensure no trailing comma for IE
+  ];
+
+  function run_inline_js() {
+    if ((root.Bokeh !== undefined) || (force === true)) {
+      for (var i = 0; i < inline_js.length; i++) {
+        inline_js[i].call(root, root.Bokeh);
+      }} else if (Date.now() < root._bokeh_timeout) {
+      setTimeout(run_inline_js, 100);
+    } else if (!root._bokeh_failed_load) {
+      console.log("Bokeh: BokehJS failed to load within specified timeout.");
+      root._bokeh_failed_load = true;
+    }
+  }
+
+  if (root._bokeh_is_loading === 0) {
+    console.debug("Bokeh: BokehJS loaded, going straight to plotting");
+    run_inline_js();
+  } else {
+    load_libs(css_urls, js_urls, js_modules, function() {
+      console.debug("Bokeh: BokehJS plotting callback run at", now());
+      run_inline_js();
+    });
+  }
+}(window));</script><script type="application/javascript">
+if ((window.PyViz === undefined) || (window.PyViz instanceof HTMLElement)) {
+  window.PyViz = {comms: {}, comm_status:{}, kernels:{}, receivers: {}, plot_index: []}
+}
+
+
+    function JupyterCommManager() {
+    }
+
+    JupyterCommManager.prototype.register_target = function(plot_id, comm_id, msg_handler) {
+      if (window.comm_manager || ((window.Jupyter !== undefined) && (Jupyter.notebook.kernel != null))) {
+        var comm_manager = window.comm_manager || Jupyter.notebook.kernel.comm_manager;
+        comm_manager.register_target(comm_id, function(comm) {
+          comm.on_msg(msg_handler);
+        });
+      } else if ((plot_id in window.PyViz.kernels) && (window.PyViz.kernels[plot_id])) {
+        window.PyViz.kernels[plot_id].registerCommTarget(comm_id, function(comm) {
+          comm.onMsg = msg_handler;
+        });
+      } else if (typeof google != 'undefined' && google.colab.kernel != null) {
+        google.colab.kernel.comms.registerTarget(comm_id, (comm) => {
+          var messages = comm.messages[Symbol.asyncIterator]();
+          function processIteratorResult(result) {
+            var message = result.value;
+            console.log(message)
+            var content = {data: message.data, comm_id};
+            var buffers = []
+            for (var buffer of message.buffers || []) {
+              buffers.push(new DataView(buffer))
+            }
+            var metadata = message.metadata || {};
+            var msg = {content, buffers, metadata}
+            msg_handler(msg);
+            return messages.next().then(processIteratorResult);
+          }
+          return messages.next().then(processIteratorResult);
+        })
+      }
+    }
+
+    JupyterCommManager.prototype.get_client_comm = function(plot_id, comm_id, msg_handler) {
+      if (comm_id in window.PyViz.comms) {
+        return window.PyViz.comms[comm_id];
+      } else if (window.comm_manager || ((window.Jupyter !== undefined) && (Jupyter.notebook.kernel != null))) {
+        var comm_manager = window.comm_manager || Jupyter.notebook.kernel.comm_manager;
+        var comm = comm_manager.new_comm(comm_id, {}, {}, {}, comm_id);
+        if (msg_handler) {
+          comm.on_msg(msg_handler);
+        }
+      } else if ((plot_id in window.PyViz.kernels) && (window.PyViz.kernels[plot_id])) {
+        var comm = window.PyViz.kernels[plot_id].connectToComm(comm_id);
+        comm.open();
+        if (msg_handler) {
+          comm.onMsg = msg_handler;
+        }
+      } else if (typeof google != 'undefined' && google.colab.kernel != null) {
+        var comm_promise = google.colab.kernel.comms.open(comm_id)
+        comm_promise.then((comm) => {
+          window.PyViz.comms[comm_id] = comm;
+          if (msg_handler) {
+            var messages = comm.messages[Symbol.asyncIterator]();
+            function processIteratorResult(result) {
+              var message = result.value;
+              var content = {data: message.data};
+              var metadata = message.metadata || {comm_id};
+              var msg = {content, metadata}
+              msg_handler(msg);
+              return messages.next().then(processIteratorResult);
+            }
+            return messages.next().then(processIteratorResult);
+          }
+        }) 
+        var sendClosure = (data, metadata, buffers, disposeOnDone) => {
+          return comm_promise.then((comm) => {
+            comm.send(data, metadata, buffers, disposeOnDone);
+          });
+        };
+        var comm = {
+          send: sendClosure
+        };
+      }
+      window.PyViz.comms[comm_id] = comm;
+      return comm;
+    }
+    window.PyViz.comm_manager = new JupyterCommManager();
+    
+
+
+var JS_MIME_TYPE = 'application/javascript';
+var HTML_MIME_TYPE = 'text/html';
+var EXEC_MIME_TYPE = 'application/vnd.holoviews_exec.v0+json';
+var CLASS_NAME = 'output';
+
+/**
+ * Render data to the DOM node
+ */
+function render(props, node) {
+  var div = document.createElement("div");
+  var script = document.createElement("script");
+  node.appendChild(div);
+  node.appendChild(script);
+}
+
+/**
+ * Handle when a new output is added
+ */
+function handle_add_output(event, handle) {
+  var output_area = handle.output_area;
+  var output = handle.output;
+  if ((output.data == undefined) || (!output.data.hasOwnProperty(EXEC_MIME_TYPE))) {
+    return
+  }
+  var id = output.metadata[EXEC_MIME_TYPE]["id"];
+  var toinsert = output_area.element.find("." + CLASS_NAME.split(' ')[0]);
+  if (id !== undefined) {
+    var nchildren = toinsert.length;
+    var html_node = toinsert[nchildren-1].children[0];
+    html_node.innerHTML = output.data[HTML_MIME_TYPE];
+    var scripts = [];
+    var nodelist = html_node.querySelectorAll("script");
+    for (var i in nodelist) {
+      if (nodelist.hasOwnProperty(i)) {
+        scripts.push(nodelist[i])
+      }
+    }
+
+    scripts.forEach( function (oldScript) {
+      var newScript = document.createElement("script");
+      var attrs = [];
+      var nodemap = oldScript.attributes;
+      for (var j in nodemap) {
+        if (nodemap.hasOwnProperty(j)) {
+          attrs.push(nodemap[j])
+        }
+      }
+      attrs.forEach(function(attr) { newScript.setAttribute(attr.name, attr.value) });
+      newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+      oldScript.parentNode.replaceChild(newScript, oldScript);
+    });
+    if (JS_MIME_TYPE in output.data) {
+      toinsert[nchildren-1].children[1].textContent = output.data[JS_MIME_TYPE];
+    }
+    output_area._hv_plot_id = id;
+    if ((window.Bokeh !== undefined) && (id in Bokeh.index)) {
+      window.PyViz.plot_index[id] = Bokeh.index[id];
+    } else {
+      window.PyViz.plot_index[id] = null;
+    }
+  } else if (output.metadata[EXEC_MIME_TYPE]["server_id"] !== undefined) {
+    var bk_div = document.createElement("div");
+    bk_div.innerHTML = output.data[HTML_MIME_TYPE];
+    var script_attrs = bk_div.children[0].attributes;
+    for (var i = 0; i < script_attrs.length; i++) {
+      toinsert[toinsert.length - 1].childNodes[1].setAttribute(script_attrs[i].name, script_attrs[i].value);
+    }
+    // store reference to server id on output_area
+    output_area._bokeh_server_id = output.metadata[EXEC_MIME_TYPE]["server_id"];
+  }
+}
+
+/**
+ * Handle when an output is cleared or removed
+ */
+function handle_clear_output(event, handle) {
+  var id = handle.cell.output_area._hv_plot_id;
+  var server_id = handle.cell.output_area._bokeh_server_id;
+  if (((id === undefined) || !(id in PyViz.plot_index)) && (server_id !== undefined)) { return; }
+  var comm = window.PyViz.comm_manager.get_client_comm("hv-extension-comm", "hv-extension-comm", function () {});
+  if (server_id !== null) {
+    comm.send({event_type: 'server_delete', 'id': server_id});
+    return;
+  } else if (comm !== null) {
+    comm.send({event_type: 'delete', 'id': id});
+  }
+  delete PyViz.plot_index[id];
+  if ((window.Bokeh !== undefined) & (id in window.Bokeh.index)) {
+    var doc = window.Bokeh.index[id].model.document
+    doc.clear();
+    const i = window.Bokeh.documents.indexOf(doc);
+    if (i > -1) {
+      window.Bokeh.documents.splice(i, 1);
+    }
+  }
+}
+
+/**
+ * Handle kernel restart event
+ */
+function handle_kernel_cleanup(event, handle) {
+  delete PyViz.comms["hv-extension-comm"];
+  window.PyViz.plot_index = {}
+}
+
+/**
+ * Handle update_display_data messages
+ */
+function handle_update_output(event, handle) {
+  handle_clear_output(event, {cell: {output_area: handle.output_area}})
+  handle_add_output(event, handle)
+}
+
+function register_renderer(events, OutputArea) {
+  function append_mime(data, metadata, element) {
+    // create a DOM node to render to
+    var toinsert = this.create_output_subarea(
+    metadata,
+    CLASS_NAME,
+    EXEC_MIME_TYPE
+    );
+    this.keyboard_manager.register_events(toinsert);
+    // Render to node
+    var props = {data: data, metadata: metadata[EXEC_MIME_TYPE]};
+    render(props, toinsert[0]);
+    element.append(toinsert);
+    return toinsert
+  }
+
+  events.on('output_added.OutputArea', handle_add_output);
+  events.on('output_updated.OutputArea', handle_update_output);
+  events.on('clear_output.CodeCell', handle_clear_output);
+  events.on('delete.Cell', handle_clear_output);
+  events.on('kernel_ready.Kernel', handle_kernel_cleanup);
+
+  OutputArea.prototype.register_mime_type(EXEC_MIME_TYPE, append_mime, {
+    safe: true,
+    index: 0
+  });
+}
+
+if (window.Jupyter !== undefined) {
+  try {
+    var events = require('base/js/events');
+    var OutputArea = require('notebook/js/outputarea').OutputArea;
+    if (OutputArea.prototype.mime_types().indexOf(EXEC_MIME_TYPE) == -1) {
+      register_renderer(events, OutputArea);
+    }
+  } catch(err) {
+  }
+}
+</script></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">Terminal</span></code> provides a way to display outputs or logs from running processes as well as an interactive terminal based on for example Bash, Python or IPython. The Terminal is based on <a class="reference external" href="https://xtermjs.org/">Xterm.js</a> which enables</p>
+<ul class="simple">
+<li><p>Terminal apps that just work: Xterm.js works with most terminal apps such as bash, vim and tmux, this includes support for curses-based apps and mouse event support</p></li>
+<li><p>Performance: Xterm.js is really fast, it even includes a GPU-accelerated renderer</p></li>
+<li><p>Rich unicode support: Supports CJK, emojis and IMEs</p></li>
+</ul>
+<p><a class="reference external" href="https://xtermjs.org/"><img alt="Xterm.js" src="https://raw.githubusercontent.com/xtermjs/xterm.js/master/logo-full.png"/></a></p>
+<div class="section" id="terminal-widget">
+<h2>Terminal Widget<a class="headerlink" href="#terminal-widget" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="parameters">
+<h3>Parameters:<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h3>
+<p>For layout and styling related parameters see the <a class="reference internal" href="../../user_guide/Customization.html"><span class="doc std std-doc">customization user guide</span></a>.</p>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">clear</span></code></strong> (action): Clears the Terminal.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">options</span></code></strong> (dict) Initial Options for the Terminal Constructor. cf. https://xtermjs.org/docs/api/terminal/interfaces/iterminaloptions/</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">output</span></code></strong> (str): System <em>output</em> written to the Terminal.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">value</span></code></strong> (str): User <em>input</em> received from the Terminal.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">write_to_console</span></code></strong> (boolean): If True output is additionally written to the server console. Default value is False.</p></li>
+</ul>
+</div>
+<div class="section" id="methods">
+<h3>Methods<a class="headerlink" href="#methods" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">write</span></code></strong>: Writes the specified string object to the Terminal.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="terminal-subprocess">
+<h2>Terminal Subprocess<a class="headerlink" href="#terminal-subprocess" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Terminal.subprocess</span></code> property makes it easy for you to run subprocesses like <code class="docutils literal notranslate"><span class="pre">ls</span></code>, <code class="docutils literal notranslate"><span class="pre">ls</span> <span class="pre">-l</span></code>, <code class="docutils literal notranslate"><span class="pre">bash</span></code>, <code class="docutils literal notranslate"><span class="pre">python</span></code> and <code class="docutils literal notranslate"><span class="pre">ipython</span></code> in the terminal.</p>
+<div class="section" id="id1">
+<h3>Parameters<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">args</span></code></strong> (str, list):  The arguments used to run the subprocess. This may be a string or a list. The string cannot contain spaces. See <a class="reference external" href="https://docs.python.org/3/library/subprocess.html">subprocess.run</a> for more details.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">kwargs</span></code></strong> (dict): Any other arguments to run the subprocess. See <a class="reference external" href="https://docs.python.org/3/library/subprocess.html">subprocess.run</a> for more details.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">running</span></code></strong> (boolean, readonly): Whether or not the subprocess is running. Defaults to False.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">run</span></code></strong> (action): Executes <code class="docutils literal notranslate"><span class="pre">subprocess.run</span></code> in a child process using the args and kwargs parameters provided as arguments or as parameter values on the instance. The child process is running in a <em>pseudo terminal</em> (<a class="reference external" href="https://docs.python.org/3/library/pty.html">pty</a>) which is then connected to the Terminal.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">kill</span></code></strong> (action): Kills the subprocess if it is running.</p></li>
+</ul>
+<hr class="docutils"/>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">terminal</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">widgets</span><span class="o">.</span><span class="n">Terminal</span><span class="p">(</span>
+    <span class="s2">"Welcome to the Panel Terminal!</span><span class="se">\n</span><span class="s2">I'm based on xterm.js</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s2">"cursorBlink"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+    <span class="n">height</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">sizing_mode</span><span class="o">=</span><span class="s1">'stretch_width'</span>
+<span class="p">)</span>
+
+<span class="n">terminal</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div id="1002">
+<div class="bk-root" data-root-id="1002" id="eddd8a4d-1b16-4ec8-b2cc-46acb85046a2"></div>
+</div>
+<script type="application/javascript">(function(root) {
+  function embed_document(root) {
+    var docs_json = {"3e240f0f-ed1d-4018-9532-8864bf34cdaa":{"defs":[{"extends":null,"module":null,"name":"ReactiveHTML1","overrides":[],"properties":[]},{"extends":null,"module":null,"name":"FlexBox1","overrides":[],"properties":[{"default":"flex-start","kind":null,"name":"align_content"},{"default":"flex-start","kind":null,"name":"align_items"},{"default":"row","kind":null,"name":"flex_direction"},{"default":"wrap","kind":null,"name":"flex_wrap"},{"default":"flex-start","kind":null,"name":"justify_content"}]},{"extends":null,"module":null,"name":"TemplateActions1","overrides":[],"properties":[{"default":0,"kind":null,"name":"open_modal"},{"default":0,"kind":null,"name":"close_modal"}]},{"extends":null,"module":null,"name":"MaterialTemplateActions1","overrides":[],"properties":[{"default":0,"kind":null,"name":"open_modal"},{"default":0,"kind":null,"name":"close_modal"}]}],"roots":{"references":[{"attributes":{"height":300,"margin":[5,10,5,10],"name":"","options":{"cursorBlink":true},"output":"Welcome to the Panel Terminal!\nI'm based on xterm.js\n\n","sizing_mode":"stretch_width"},"id":"1002","type":"panel.models.terminal.Terminal"},{"attributes":{"reload":false},"id":"1004","type":"panel.models.location.Location"},{"attributes":{"client_comm_id":"223e00c84f164923808847f248e9808d","comm_id":"216021e565e749e887262acad8b93aa1","plot_id":"1002"},"id":"1003","type":"panel.models.comm_manager.CommManager"}],"root_ids":["1002","1003","1004"]},"title":"Bokeh Application","version":"2.3.3"}};
+    var render_items = [{"docid":"3e240f0f-ed1d-4018-9532-8864bf34cdaa","root_ids":["1002"],"roots":{"1002":"eddd8a4d-1b16-4ec8-b2cc-46acb85046a2"}}];
+    root.Bokeh.embed.embed_items_notebook(docs_json, render_items);
+  }
+  if (root.Bokeh !== undefined && root.Bokeh.Panel !== undefined && ( root['Terminal'] !== undefined|| root['xtermjs'] !== undefined)) {
+    embed_document(root);
+  } else {
+    var attempts = 0;
+    var timer = setInterval(function(root) {
+      if (root.Bokeh !== undefined && root.Bokeh.Panel !== undefined && (root['Terminal'] !== undefined || root['xtermjs'] !== undefined)) {
+        clearInterval(timer);
+        embed_document(root);
+      } else if (document.readyState == "complete") {
+        attempts++;
+        if (attempts > 200) {
+          clearInterval(timer);
+          console.log("Bokeh: ERROR: Unable to run BokehJS code because BokehJS library is missing");
+        }
+      }
+    }, 25, root)
+  }
+})(window);</script></div></div>
+</div>
+</div>
+<div class="section" id="writing-strings-to-the-terminal">
+<h3>Writing strings to the terminal<a class="headerlink" href="#writing-strings-to-the-terminal" title="Permalink to this headline">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">terminal</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"This is written directly to the terminal.</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">terminal</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"Danish Characters: æøåÆØÅ</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">terminal</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"Emoji: Python 🐍  Panel ❤️ 😊 </span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">terminal</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"Links: https://panel.holoviz.org</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>184
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="writing-stdout-to-the-terminal">
+<h3>Writing stdout to the terminal<a class="headerlink" href="#writing-stdout-to-the-terminal" title="Permalink to this headline">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">terminal</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"This print statement is redirected from stdout to the Panel Terminal"</span><span class="p">)</span>
+
+<span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">__stdout__</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"This print statement is again redirected to the server console"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="logging-to-the-terminal">
+<h3>Logging to the terminal<a class="headerlink" href="#logging-to-the-terminal" title="Permalink to this headline">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"terminal"</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+<span class="n">stream_handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">terminal</span><span class="p">)</span> <span class="c1"># NOTE THIS</span>
+<span class="n">stream_handler</span><span class="o">.</span><span class="n">terminator</span> <span class="o">=</span> <span class="s2">"  </span><span class="se">\n</span><span class="s2">"</span>
+<span class="n">formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="s2">"</span><span class="si">%(asctime)s</span><span class="s2"> [</span><span class="si">%(levelname)s</span><span class="s2">]: </span><span class="si">%(message)s</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">stream_handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">formatter</span><span class="p">)</span>
+<span class="n">stream_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">stream_handler</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Hello Info Logger"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="streaming-to-the-terminal">
+<h3>Streaming to the terminal<a class="headerlink" href="#streaming-to-the-terminal" title="Permalink to this headline">¶</a></h3>
+<p>We only do this to a reduced amount as you can reach a general rate limit in the notebook.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">):</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span> 
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="run-subprocess-and-direct-output-to-terminal">
+<h3>Run SubProcess and direct output to Terminal<a class="headerlink" href="#run-subprocess-and-direct-output-to-terminal" title="Permalink to this headline">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">terminal</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"ls"</span><span class="p">,</span> <span class="s2">"-l"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Now let us review the output so far since a static rendering of this page will not dynamically update the contents of the terminal displayed above:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">terminal</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div id="1062">
+<div class="bk-root" data-root-id="1062" id="e27bd4e9-e996-47d4-b451-e72e37305970"></div>
+</div>
+<script type="application/javascript">(function(root) {
+  function embed_document(root) {
+    var docs_json = {"4dbd3d83-187d-49d6-91dc-daa63047e14d":{"defs":[{"extends":null,"module":null,"name":"ReactiveHTML1","overrides":[],"properties":[]},{"extends":null,"module":null,"name":"FlexBox1","overrides":[],"properties":[{"default":"flex-start","kind":null,"name":"align_content"},{"default":"flex-start","kind":null,"name":"align_items"},{"default":"row","kind":null,"name":"flex_direction"},{"default":"wrap","kind":null,"name":"flex_wrap"},{"default":"flex-start","kind":null,"name":"justify_content"}]},{"extends":null,"module":null,"name":"TemplateActions1","overrides":[],"properties":[{"default":0,"kind":null,"name":"open_modal"},{"default":0,"kind":null,"name":"close_modal"}]},{"extends":null,"module":null,"name":"MaterialTemplateActions1","overrides":[],"properties":[{"default":0,"kind":null,"name":"open_modal"},{"default":0,"kind":null,"name":"close_modal"}]}],"roots":{"references":[{"attributes":{"height":300,"margin":[5,10,5,10],"name":"","options":{"cursorBlink":true},"output":"Welcome to the Panel Terminal!\nI'm based on xterm.js\n\nThis is written directly to the terminal.\nDanish Characters: \u00e6\u00f8\u00e5\u00c6\u00d8\u00c5\nEmoji: Python \ud83d\udc0d  Panel \u2764\ufe0f \ud83d\ude0a \nLinks: https://panel.holoviz.org\nThis print statement is redirected from stdout to the Panel Terminal\n2021-07-20 16:11:30,017 [INFO]: Hello Info Logger  \n2021-07-20 16:11:30,025 [INFO]: b7830fc2-8058-4bee-9bf6-474aafbf3695  \n2021-07-20 16:11:30,026 [INFO]: feab304a-5005-4ffc-943b-b0f2549a2a99  \n2021-07-20 16:11:30,027 [INFO]: 7b53248a-7b7f-43bf-95e3-b78988a8aaf4  \n2021-07-20 16:11:30,028 [INFO]: 2f73c648-8d0b-44c9-9102-6347f45d28db  \n2021-07-20 16:11:30,029 [INFO]: 3ea920ca-7e3f-480b-8dec-52475f986f75  \n2021-07-20 16:11:30,030 [INFO]: 8ca47c23-fbc3-473e-b485-79a0424c1512  \n2021-07-20 16:11:30,031 [INFO]: 41e9e4f6-8970-4014-9a89-7c8dd7364d18  \n2021-07-20 16:11:30,032 [INFO]: a4371db2-0d0a-48c4-a924-886a4e51ddee  \n2021-07-20 16:11:30,033 [INFO]: 5f857c7b-7c85-4a1a-8f1d-74a464a0552e  \n2021-07-20 16:11:30,034 [INFO]: 8e74013b-29fc-4812-9839-8e8bdd60225f  \n2021-07-20 16:11:30,035 [INFO]: d7b18fef-1db6-486f-b303-42fdbd0b4036  \n2021-07-20 16:11:30,036 [INFO]: 02dcb43a-94ae-4717-bf87-e26383553ad5  \n2021-07-20 16:11:30,037 [INFO]: 807db36c-113d-49c1-99db-971a16173083  \n2021-07-20 16:11:30,038 [INFO]: 91a28cdd-9962-455f-aa9c-106df7acf46e  \n2021-07-20 16:11:30,039 [INFO]: a16fc54e-a553-4671-8ac6-cd237c12d879  \n2021-07-20 16:11:30,040 [INFO]: 57a37eac-9763-47e7-94e1-a9c68eb00c99  \n2021-07-20 16:11:30,041 [INFO]: fb6835b7-f633-4b50-846e-ed7f04505614  \n2021-07-20 16:11:30,042 [INFO]: c659deb0-875e-436b-884c-b80acc75c806  \n2021-07-20 16:11:30,043 [INFO]: d799d258-3b7b-41e3-800d-20e354acd77b  \n2021-07-20 16:11:30,044 [INFO]: 0d878d9f-82bb-4635-9322-01efe3e8bab5  \n2021-07-20 16:11:30,045 [INFO]: bd76ba94-6335-4dd5-8e20-12a131e7babf  \n2021-07-20 16:11:30,046 [INFO]: 999b6cb4-5ed5-4477-af2e-f3c2943259ee  \n2021-07-20 16:11:30,047 [INFO]: e6e8b299-7179-4664-962f-1a2463af561e  \n2021-07-20 16:11:30,048 [INFO]: d6094c4d-5369-447a-9acf-2c86896bcff2  \n2021-07-20 16:11:30,049 [INFO]: 9a1d7dbf-559b-4c2e-b7f8-ef642db4e248  \n2021-07-20 16:11:30,051 [INFO]: 826469b1-9aa0-48b8-82c7-97e4dc8d5420  \n2021-07-20 16:11:30,052 [INFO]: 58e8f485-3d2a-4b4e-9ac6-3a6396567c7e  \n2021-07-20 16:11:30,053 [INFO]: 97e939c9-a857-4337-9d2f-f3f7f8948349  \n2021-07-20 16:11:30,054 [INFO]: e3d90e10-93f1-471b-8662-bd6d04bdb2ab  \n2021-07-20 16:11:30,055 [INFO]: 36515eba-d12b-4227-937c-e7a5008f3313  \n2021-07-20 16:11:30,056 [INFO]: 0b30ecee-2daf-48a4-8942-3ef38c495e35  \n2021-07-20 16:11:30,057 [INFO]: 8f62ce00-d7c0-4e84-b1fb-e9a480483545  \n2021-07-20 16:11:30,057 [INFO]: ea14c00e-ce6f-4080-8700-eaa04686617b  \n2021-07-20 16:11:30,058 [INFO]: a1512296-0872-4b48-8d33-0d559fca2eb9  \n2021-07-20 16:11:30,059 [INFO]: 0c11a945-ce72-4cc0-9092-f20eb7851db6  \n2021-07-20 16:11:30,060 [INFO]: e3ef5509-223a-4e96-a9f3-f60734e9bc60  \n2021-07-20 16:11:30,061 [INFO]: 111e9d6c-1151-4b04-af08-dbcabcdf3028  \n2021-07-20 16:11:30,062 [INFO]: 237e49c6-5e1b-4782-9a9f-d0edd593d96b  \n2021-07-20 16:11:30,063 [INFO]: fd2c06ec-1523-4d8b-9090-4967ce81f198  \n2021-07-20 16:11:30,064 [INFO]: 3da52cc6-f307-4215-974d-de0549d77dac  \n2021-07-20 16:11:30,065 [INFO]: dbd6a29d-5180-4add-ac9f-8f68e126afae  \n2021-07-20 16:11:30,066 [INFO]: cf5b1439-19f0-4c99-b72b-b91250fb6770  \n2021-07-20 16:11:30,067 [INFO]: 81deeb20-d4ed-4136-8aa0-c557a070a5f0  \n2021-07-20 16:11:30,068 [INFO]: 26b9d151-1739-4a36-afa1-730fcb6a7a4a  \n2021-07-20 16:11:30,069 [INFO]: 3c6202a1-d83e-40d8-a0ef-84b7f37854ff  \n2021-07-20 16:11:30,069 [INFO]: 76e47cf9-5fc0-4cdb-bdbb-2e34d8fb79ba  \n2021-07-20 16:11:30,070 [INFO]: 049aebe3-3b2d-4112-ba48-c985323496c4  \n2021-07-20 16:11:30,071 [INFO]: af3863c8-e448-4375-bf77-4b0a758359f6  \n2021-07-20 16:11:30,072 [INFO]: eda9e690-0db5-4563-adb2-4b19153c1039  \n2021-07-20 16:11:30,073 [INFO]: 92cecd72-36c7-40ca-816c-ac6fadb9d277  \n","sizing_mode":"stretch_width"},"id":"1062","type":"panel.models.terminal.Terminal"},{"attributes":{"client_comm_id":"d54824d375f344e7bf6c55dc05d45e59","comm_id":"92e11f4f7e8f4d17ba8600419841a5d0","plot_id":"1062"},"id":"1064","type":"panel.models.comm_manager.CommManager"}],"root_ids":["1062","1064"]},"title":"Bokeh Application","version":"2.3.3"}};
+    var render_items = [{"docid":"4dbd3d83-187d-49d6-91dc-daa63047e14d","root_ids":["1062"],"roots":{"1062":"e27bd4e9-e996-47d4-b451-e72e37305970"}}];
+    root.Bokeh.embed.embed_items_notebook(docs_json, render_items);
+  }
+  if (root.Bokeh !== undefined && root.Bokeh.Panel !== undefined && ( root['Terminal'] !== undefined|| root['xtermjs'] !== undefined)) {
+    embed_document(root);
+  } else {
+    var attempts = 0;
+    var timer = setInterval(function(root) {
+      if (root.Bokeh !== undefined && root.Bokeh.Panel !== undefined && (root['Terminal'] !== undefined || root['xtermjs'] !== undefined)) {
+        clearInterval(timer);
+        embed_document(root);
+      } else if (document.readyState == "complete") {
+        attempts++;
+        if (attempts > 200) {
+          clearInterval(timer);
+          console.log("Bokeh: ERROR: Unable to run BokehJS code because BokehJS library is missing");
+        }
+      }
+    }, 25, root)
+  }
+})(window);</script></div></div>
+</div>
+</div>
+<div class="section" id="clear-the-terminal">
+<h3>Clear the Terminal<a class="headerlink" href="#clear-the-terminal" title="Permalink to this headline">¶</a></h3>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">terminal</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="run-an-interactive-process-in-the-terminal">
+<h2>Run an Interactive Process in the Terminal<a class="headerlink" href="#run-an-interactive-process-in-the-terminal" title="Permalink to this headline">¶</a></h2>
+<p>You can run interactive processes like <code class="docutils literal notranslate"><span class="pre">bash</span></code>, <code class="docutils literal notranslate"><span class="pre">python</span></code>, <code class="docutils literal notranslate"><span class="pre">ipython</span></code> or similar.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">subprocess_terminal</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">widgets</span><span class="o">.</span><span class="n">Terminal</span><span class="p">(</span>
+    <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s2">"cursorBlink"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+    <span class="n">height</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">sizing_mode</span><span class="o">=</span><span class="s1">'stretch_width'</span>
+<span class="p">)</span>
+
+<span class="n">run_python</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">widgets</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Run Python"</span><span class="p">,</span> <span class="n">button_type</span><span class="o">=</span><span class="s2">"success"</span><span class="p">)</span>
+<span class="n">run_python</span><span class="o">.</span><span class="n">on_click</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">subprocess_terminal</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"python"</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">kill</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">widgets</span><span class="o">.</span><span class="n">Button</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Kill Python"</span><span class="p">,</span> <span class="n">button_type</span><span class="o">=</span><span class="s2">"danger"</span><span class="p">)</span>
+<span class="n">kill</span><span class="o">.</span><span class="n">on_click</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">subprocess_terminal</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+<span class="p">)</span>
+
+<span class="n">pn</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span>
+    <span class="n">pn</span><span class="o">.</span><span class="n">Row</span><span class="p">(</span><span class="n">run_python</span><span class="p">,</span> <span class="n">kill</span><span class="p">,</span> <span class="n">subprocess_terminal</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">running</span><span class="p">),</span>
+    <span class="n">subprocess_terminal</span><span class="p">,</span>
+    <span class="n">sizing_mode</span><span class="o">=</span><span class="s1">'stretch_both'</span><span class="p">,</span>
+    <span class="n">height</span><span class="o">=</span><span class="mi">500</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html"><div id="1067">
+<div class="bk-root" data-root-id="1067" id="f08028dc-f781-45d6-b45e-2766327533fe"></div>
+</div>
+<script type="application/javascript">(function(root) {
+  function embed_document(root) {
+    var docs_json = {"12ae3baa-938e-4b56-8014-d2997ccd2f2b":{"defs":[{"extends":null,"module":null,"name":"ReactiveHTML1","overrides":[],"properties":[]},{"extends":null,"module":null,"name":"FlexBox1","overrides":[],"properties":[{"default":"flex-start","kind":null,"name":"align_content"},{"default":"flex-start","kind":null,"name":"align_items"},{"default":"row","kind":null,"name":"flex_direction"},{"default":"wrap","kind":null,"name":"flex_wrap"},{"default":"flex-start","kind":null,"name":"justify_content"}]},{"extends":null,"module":null,"name":"TemplateActions1","overrides":[],"properties":[{"default":0,"kind":null,"name":"open_modal"},{"default":0,"kind":null,"name":"close_modal"}]},{"extends":null,"module":null,"name":"MaterialTemplateActions1","overrides":[],"properties":[{"default":0,"kind":null,"name":"open_modal"},{"default":0,"kind":null,"name":"close_modal"}]}],"roots":{"references":[{"attributes":{"height":300,"margin":[5,10,5,10],"name":"","options":{"cursorBlink":true},"sizing_mode":"stretch_width"},"id":"1072","type":"panel.models.terminal.Terminal"},{"attributes":{"disabled":true,"labels":["Running"],"margin":[5,10,5,10]},"id":"1071","type":"CheckboxGroup"},{"attributes":{"client_comm_id":"361aa06fef6c4be5a3abae1e666f7e21","comm_id":"228333f7f5a549058c809c38d7eb76f2","plot_id":"1067"},"id":"1073","type":"panel.models.comm_manager.CommManager"},{"attributes":{"button_type":"danger","icon":null,"label":"Kill Python","margin":[5,10,5,10],"subscribed_events":["button_click"]},"id":"1070","type":"Button"},{"attributes":{"children":[{"id":"1069"},{"id":"1070"},{"id":"1071"}],"margin":[0,0,0,0],"name":"Row02990"},"id":"1068","type":"Row"},{"attributes":{"children":[{"id":"1068"},{"id":"1072"}],"height":500,"margin":[0,0,0,0],"name":"Column02991","sizing_mode":"stretch_both"},"id":"1067","type":"Column"},{"attributes":{"button_type":"success","icon":null,"label":"Run Python","margin":[5,10,5,10],"subscribed_events":["button_click"]},"id":"1069","type":"Button"}],"root_ids":["1067","1073"]},"title":"Bokeh Application","version":"2.3.3"}};
+    var render_items = [{"docid":"12ae3baa-938e-4b56-8014-d2997ccd2f2b","root_ids":["1067"],"roots":{"1067":"f08028dc-f781-45d6-b45e-2766327533fe"}}];
+    root.Bokeh.embed.embed_items_notebook(docs_json, render_items);
+  }
+  if (root.Bokeh !== undefined && root.Bokeh.Panel !== undefined && ( root['Terminal'] !== undefined|| root['xtermjs'] !== undefined)) {
+    embed_document(root);
+  } else {
+    var attempts = 0;
+    var timer = setInterval(function(root) {
+      if (root.Bokeh !== undefined && root.Bokeh.Panel !== undefined && (root['Terminal'] !== undefined || root['xtermjs'] !== undefined)) {
+        clearInterval(timer);
+        embed_document(root);
+      } else if (document.readyState == "complete") {
+        attempts++;
+        if (attempts > 200) {
+          clearInterval(timer);
+          console.log("Bokeh: ERROR: Unable to run BokehJS code because BokehJS library is missing");
+        }
+      }
+    }, 25, root)
+  }
+})(window);</script></div></div>
+</div>
+</div>
+<div id="scroller-right">This web page was generated from a Jupyter notebook and not all interactivity will work on this website. <a href="https://raw.githubusercontent.com/holoviz/panel/master/examples/reference/widgets/Terminal.ipynb">Right click to download and run locally</a> for full Python-backed interactivity.</div><hr class="docutils"/>
+<p><a class="reference external" href="https://raw.githubusercontent.com/holoviz/panel/master/examples/reference/widgets/Terminal.ipynb">Download this notebook from GitHub (right-click to download).</a></p>
+</div>
+</div>
+<div class="prev-next-bottom">
+<a class="left-prev" href="Tabulator.html" id="prev-link" title="previous page">Tabulator</a>
+<a class="right-next" href="TextAreaInput.html" id="next-link" title="next page">Textareainput</a>
+</div>
+</main>
+</div>
+</div>
+<script src="../../_static/js/index.1c5a1a01449ed65a7b51.js"></script>
+<footer class="footer mt-5 mt-md-0">
+<div class="container">
+<div class="footer-item">
+<p class="copyright">
+    © Copyright 2019-2021 Panel contributors.<br/>
+</p>
+</div>
+<div class="footer-item">
+<p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.5.3.<br/>
+</p>
+</div>
+</div>
+</footer>
+</body>
+</html>

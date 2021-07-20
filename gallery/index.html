@@ -1,0 +1,795 @@
+
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Gallery — Panel 0.12.0 documentation</title>
+<link href="../_static/css/theme.css" rel="stylesheet"/>
+<link href="../_static/css/index.c5995385ac14fb8791e8eb36b4908be2.css" rel="stylesheet"/>
+<link href="../_static/vendor/fontawesome/5.13.0/css/all.min.css" rel="stylesheet"/>
+<link as="font" crossorigin="" href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2" rel="preload" type="font/woff2"/>
+<link as="font" crossorigin="" href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2" rel="preload" type="font/woff2"/>
+<link href="../_static/pygments.css" rel="stylesheet" type="text/css">
+<link href="../_static/basic.css" rel="stylesheet" type="text/css">
+<link href="../_static/togglebutton.css" rel="stylesheet" type="text/css">
+<link href="../_static/mystnb.css" rel="stylesheet" type="text/css"/>
+<link href="../_static/graphviz.css" rel="stylesheet" type="text/css"/>
+<link href="../_static/nbsite.css" rel="stylesheet" type="text/css"/>
+<link href="../_static/css/custom.css" rel="stylesheet" type="text/css"/>
+<link as="script" href="../_static/js/index.1c5a1a01449ed65a7b51.js" rel="preload"/>
+<script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+<script src="../_static/jquery.js"></script>
+<script src="../_static/underscore.js"></script>
+<script src="../_static/doctools.js"></script>
+<script src="../_static/togglebutton.js"></script>
+<script>var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+<link href="../_static/favicon.ico" rel="shortcut icon">
+<link href="../genindex.html" rel="index" title="Index"/>
+<link href="../search.html" rel="search" title="Search"/>
+<link href="demos/VTKInteractive.html" rel="next" title="Vtkinteractive"/>
+<link href="../user_guide/Django_Apps.html" rel="prev" title="Django Apps"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="en" name="docsearch:language"/>
+</link></link></link></link></head>
+<body data-offset="80" data-spy="scroll" data-target="#bd-toc-nav">
+<div class="container-fluid" id="banner"></div>
+<nav class="navbar navbar-dark navbar-expand-lg bg-dark fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+<div id="navbar-start">
+<a class="navbar-brand" href="../index.html">
+<img alt="logo" class="logo" src="../_static/logo_horizontal.png"/>
+</a>
+</div>
+<button aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-target="#navbar-collapsible" data-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<div class="col-lg-9 collapse navbar-collapse" id="navbar-collapsible">
+<div class="mr-auto" id="navbar-center">
+<div class="navbar-center-item">
+<ul class="navbar-nav" id="navbar-main-elements">
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../getting_started/index.html">
+  Getting Started
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../user_guide/index.html">
+  User Guide
+ </a>
+</li>
+<li class="toctree-l1 current active nav-item">
+<a class="current reference internal nav-link" href="#">
+  Gallery
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../reference/index.html">
+  Reference Gallery
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../developer_guide/index.html">
+  Developers
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../api/index.html">
+  API
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../releases.html">
+  Releases
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../FAQ.html">
+  FAQ
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../about/index.html">
+  About
+ </a>
+</li>
+</ul>
+</div>
+</div>
+<div id="navbar-end">
+<div class="navbar-end-item">
+<ul aria-label="Icon Links" class="navbar-nav" id="navbar-icon-links">
+<li class="nav-item">
+<a class="nav-link" href="https://github.com/holoviz/panel" rel="noopener" target="_blank" title="GitHub">
+<span><i class="fab fa-github-square"></i></span>
+<label class="sr-only">GitHub</label>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://twitter.com/Panel_Org" rel="noopener" target="_blank" title="Twitter">
+<span><i class="fab fa-twitter-square"></i></span>
+<label class="sr-only">Twitter</label>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://discourse.holoviz.org/" rel="noopener" target="_blank" title="Discourse">
+<span><i class="fab fa-discourse"></i></span>
+<label class="sr-only">Discourse</label>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<div class="container-xl">
+<div class="row">
+<!-- Only show if we have sidebars configured, else just a small margin  -->
+<div class="col-12 col-md-2 bd-sidebar"><form action="../search.html" class="bd-search d-flex align-items-center" method="get">
+<i class="icon fas fa-search"></i>
+<input aria-label="Search the docs ..." autocomplete="off" class="form-control" id="search-input" name="q" placeholder="Search the docs ..." type="search"/>
+</form><nav aria-label="Main navigation" class="bd-links" id="bd-docs-nav">
+<div class="bd-toc-item active">
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="demos/VTKInteractive.html">
+   Vtkinteractive
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="demos/VTKSlicer.html">
+   Vtkslicer
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="demos/VTKWarp.html">
+   Vtkwarp
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="demos/attractors.html">
+   Attractors
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="demos/gapminders.html">
+   Gapminders
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="demos/glaciers.html">
+   Glaciers
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="demos/nyc_taxi.html">
+   Nyc taxi
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="demos/portfolio-optimizer.html">
+   Portfolio-optimizer
+  </a>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="simple/altair_choropleth.html">
+   Altair choropleth
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="simple/clifford_interact.html">
+   Clifford interact
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="simple/color_speech_recognition.html">
+   Color speech recognition
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="simple/deckgl_game_of_life.html">
+   Deckgl game of life
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="simple/defer_data_load.html">
+   Defer data load
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="simple/file_download_examples.html">
+   File download examples
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="simple/iris_kmeans.html">
+   Iris kmeans
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="simple/loading_spinner.html">
+   Loading spinner
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="simple/random_number_generator.html">
+   Random number generator
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="simple/save_filtered_df.html">
+   Save filtered df
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="simple/sync_location.html">
+   Sync location
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="simple/temperature_distribution.html">
+   Temperature distribution
+  </a>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="apis/stocks_altair.html">
+   Stocks altair
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="apis/stocks_hvplot.html">
+   Stocks hvplot
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="apis/stocks_matplotlib.html">
+   Stocks matplotlib
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="apis/stocks_plotly.html">
+   Stocks plotly
+  </a>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="layout/distribution_tabs.html">
+   Distribution tabs
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="layout/dynamic_tabs.html">
+   Dynamic tabs
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="layout/plot_with_columns.html">
+   Plot with columns
+  </a>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="dynamic/dynamic_plot_layout.html">
+   Dynamic plot layout
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="dynamic/dynamic_timeseries_image_analysis.html">
+   Dynamic timeseries image analysis
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="dynamic/dynamic_ui.html">
+   Dynamic ui
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="dynamic/dynamic_widget_values.html">
+   Dynamic widget values
+  </a>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="param/action_button.html">
+   Action button
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="param/deck_gl_global_power_plants.html">
+   Deck gl global power plants
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="param/download_upload_csv.html">
+   Download upload csv
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="param/loading_indicator.html">
+   Loading indicator
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="param/param_subobjects.html">
+   Param subobjects
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="param/precedence.html">
+   Precedence
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="param/reactive_plots.html">
+   Reactive plots
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="param/reactive_tables.html">
+   Reactive tables
+  </a>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="streaming/hardware_automation.html">
+   Hardware automation
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="streaming/streaming_bokeh.html">
+   Streaming bokeh
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="streaming/streaming_perspective.html">
+   Streaming perspective
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="streaming/streaming_tabulator.html">
+   Streaming tabulator
+  </a>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="components/CanvasDraw.html">
+   Canvasdraw
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="components/LeafletHeatMap.html">
+   Leafletheatmap
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="components/MaterialUI.html">
+   Materialui
+  </a>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="links/bokeh_property_editor.html">
+   Bokeh property editor
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="links/deck_gl_json_editor.html">
+   Deck gl json editor
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="links/holoviews_glyph_link.html">
+   Holoviews glyph link
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="links/plotly_link.html">
+   Plotly link
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="links/vega_heatmap_link.html">
+   Vega heatmap link
+  </a>
+</li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="external/DataTable.html">
+   Datatable
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="external/Folium.html">
+   Folium
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="external/deck.gl.html">
+   Deck.gl
+  </a>
+</li>
+</ul>
+</div>
+</nav>
+</div>
+<div class="d-none d-xl-block col-xl-2 bd-toc">
+<div class="toc-item">
+<div class="tocsection onthispage pt-5 pb-3">
+<i class="fas fa-list"></i> On this page
+</div>
+<nav id="bd-toc-nav">
+<ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#demos">
+   Demos
+  </a>
+</li>
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#simple-apps">
+   Simple Apps
+  </a>
+</li>
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#apis">
+   APIs
+  </a>
+</li>
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#layouts">
+   Layouts
+  </a>
+</li>
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#dynamic-uis">
+   Dynamic UIs
+  </a>
+</li>
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#param-based-apps">
+   Param based apps
+  </a>
+</li>
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#streaming">
+   Streaming
+  </a>
+</li>
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#custom-components">
+   Custom components
+  </a>
+</li>
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#linking">
+   Linking
+  </a>
+</li>
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#external-libraries">
+   External libraries
+  </a>
+</li>
+</ul>
+</nav>
+</div>
+<div class="toc-item">
+</div>
+</div>
+<main class="col-12 col-md-10 col-xl-8 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+<div>
+<div class="section" id="gallery">
+<h1>Gallery<a class="headerlink" href="#gallery" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="demos">
+<h2>Demos<a class="headerlink" href="#demos" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<p>A set of sophisticated apps built to demonstrate the features of Panel.</p>
+<div class="sphx-glr-thumbcontainer example" tooltip="Vtkinteractive"><div class="figure align-default" id="id1">
+<img alt="../_images/VTKInteractive.png" src="../_images/VTKInteractive.png">
+<p class="caption"><span class="caption-text"><a class="reference internal" href="demos/VTKInteractive.html#demos-gallery-vtkinteractive"><span class="std std-ref">Vtkinteractive</span></a></span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</img></div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Vtkslicer"><div class="figure align-default" id="id2">
+<img alt="../_images/VTKSlicer.png" src="../_images/VTKSlicer.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="demos/VTKSlicer.html#demos-gallery-vtkslicer"><span class="std std-ref">Vtkslicer</span></a></span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Vtkwarp"><div class="figure align-default" id="id3">
+<img alt="../_images/VTKWarp.png" src="../_images/VTKWarp.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="demos/VTKWarp.html#demos-gallery-vtkwarp"><span class="std std-ref">Vtkwarp</span></a></span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Attractors"><div class="figure align-default" id="id4">
+<img alt="../_images/attractors.png" src="../_images/attractors.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="demos/attractors.html#demos-gallery-attractors"><span class="std std-ref">Attractors</span></a></span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Gapminders"><div class="figure align-default" id="id5">
+<img alt="../_images/gapminders.png" src="../_images/gapminders.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="demos/gapminders.html#demos-gallery-gapminders"><span class="std std-ref">Gapminders</span></a></span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Glaciers"><div class="figure align-default" id="id6">
+<img alt="../_images/glaciers.png" src="../_images/glaciers.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="demos/glaciers.html#demos-gallery-glaciers"><span class="std std-ref">Glaciers</span></a></span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Nyc Taxi"><div class="figure align-default" id="id7">
+<img alt="../_images/nyc_taxi.png" src="../_images/nyc_taxi.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="demos/nyc_taxi.html#demos-gallery-nyc-taxi"><span class="std std-ref">Nyc Taxi</span></a></span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Portfolio-Optimizer"><div class="figure align-default" id="id8">
+<img alt="../_images/portfolio-optimizer.png" src="../_images/portfolio-optimizer.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="demos/portfolio-optimizer.html#demos-gallery-portfolio-optimizer"><span class="std std-ref">Portfolio-Optimizer</span></a></span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
+</div>
+</div><div style="clear:both"></div></div>
+<div class="section" id="simple-apps">
+<h2>Simple Apps<a class="headerlink" href="#simple-apps" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<p>Simple example apps meant to provide a quick introduction to Panel.</p>
+<div class="sphx-glr-thumbcontainer example" tooltip="Altair Choropleth"><div class="figure align-default" id="id9">
+<img alt="../_images/altair_choropleth.png" src="../_images/altair_choropleth.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="simple/altair_choropleth.html#simple-gallery-altair-choropleth"><span class="std std-ref">Altair Choropleth</span></a></span><a class="headerlink" href="#id9" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Clifford Interact"><div class="figure align-default" id="id10">
+<img alt="../_images/clifford_interact.png" src="../_images/clifford_interact.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="simple/clifford_interact.html#simple-gallery-clifford-interact"><span class="std std-ref">Clifford Interact</span></a></span><a class="headerlink" href="#id10" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Color Speech Recognition"><div class="figure align-default" id="id11">
+<img alt="../_images/color_speech_recognition.png" src="../_images/color_speech_recognition.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="simple/color_speech_recognition.html#simple-gallery-color-speech-recognition"><span class="std std-ref">Color Speech Recognition</span></a></span><a class="headerlink" href="#id11" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Deckgl Game Of Life"><div class="figure align-default" id="id12">
+<img alt="../_images/deckgl_game_of_life.png" src="../_images/deckgl_game_of_life.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="simple/deckgl_game_of_life.html#simple-gallery-deckgl-game-of-life"><span class="std std-ref">Deckgl Game Of Life</span></a></span><a class="headerlink" href="#id12" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Defer Data Load"><div class="figure align-default" id="id13">
+<img alt="../_images/defer_data_load.png" src="../_images/defer_data_load.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="simple/defer_data_load.html#simple-gallery-defer-data-load"><span class="std std-ref">Defer Data Load</span></a></span><a class="headerlink" href="#id13" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="File Download Examples"><div class="figure align-default" id="id14">
+<img alt="../_images/file_download_examples.png" src="../_images/file_download_examples.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="simple/file_download_examples.html#simple-gallery-file-download-examples"><span class="std std-ref">File Download Examples</span></a></span><a class="headerlink" href="#id14" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Iris Kmeans"><div class="figure align-default" id="id15">
+<img alt="../_images/iris_kmeans.png" src="../_images/iris_kmeans.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="simple/iris_kmeans.html#simple-gallery-iris-kmeans"><span class="std std-ref">Iris Kmeans</span></a></span><a class="headerlink" href="#id15" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Loading Spinner"><div class="figure align-default" id="id16">
+<img alt="../_images/loading_spinner.png" src="../_images/loading_spinner.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="simple/loading_spinner.html#simple-gallery-loading-spinner"><span class="std std-ref">Loading Spinner</span></a></span><a class="headerlink" href="#id16" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Random Number Generator"><div class="figure align-default" id="id17">
+<img alt="../_images/random_number_generator.png" src="../_images/random_number_generator.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="simple/random_number_generator.html#simple-gallery-random-number-generator"><span class="std std-ref">Random Number Generator</span></a></span><a class="headerlink" href="#id17" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Save Filtered Df"><div class="figure align-default" id="id18">
+<img alt="../_images/save_filtered_df.png" src="../_images/save_filtered_df.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="simple/save_filtered_df.html#simple-gallery-save-filtered-df"><span class="std std-ref">Save Filtered Df</span></a></span><a class="headerlink" href="#id18" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Sync Location"><div class="figure align-default" id="id19">
+<img alt="../_images/sync_location.png" src="../_images/sync_location.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="simple/sync_location.html#simple-gallery-sync-location"><span class="std std-ref">Sync Location</span></a></span><a class="headerlink" href="#id19" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Temperature Distribution"><div class="figure align-default" id="id20">
+<img alt="../_images/temperature_distribution.png" src="../_images/temperature_distribution.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="simple/temperature_distribution.html#simple-gallery-temperature-distribution"><span class="std std-ref">Temperature Distribution</span></a></span><a class="headerlink" href="#id20" title="Permalink to this image">¶</a></p>
+</div>
+</div><div style="clear:both"></div></div>
+<div class="section" id="apis">
+<h2>APIs<a class="headerlink" href="#apis" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<p>Examples meant to demonstrate the usage of different Panel APIs such as interact and reactive functions.</p>
+<div class="sphx-glr-thumbcontainer example" tooltip="Stocks Altair"><div class="figure align-default" id="id21">
+<img alt="../_images/stocks_altair.png" src="../_images/stocks_altair.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="apis/stocks_altair.html#apis-gallery-stocks-altair"><span class="std std-ref">Stocks Altair</span></a></span><a class="headerlink" href="#id21" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Stocks Hvplot"><div class="figure align-default" id="id22">
+<img alt="../_images/stocks_hvplot.png" src="../_images/stocks_hvplot.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="apis/stocks_hvplot.html#apis-gallery-stocks-hvplot"><span class="std std-ref">Stocks Hvplot</span></a></span><a class="headerlink" href="#id22" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Stocks Matplotlib"><div class="figure align-default" id="id23">
+<img alt="../_images/stocks_matplotlib.png" src="../_images/stocks_matplotlib.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="apis/stocks_matplotlib.html#apis-gallery-stocks-matplotlib"><span class="std std-ref">Stocks Matplotlib</span></a></span><a class="headerlink" href="#id23" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Stocks Plotly"><div class="figure align-default" id="id24">
+<img alt="../_images/stocks_plotly.png" src="../_images/stocks_plotly.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="apis/stocks_plotly.html#apis-gallery-stocks-plotly"><span class="std std-ref">Stocks Plotly</span></a></span><a class="headerlink" href="#id24" title="Permalink to this image">¶</a></p>
+</div>
+</div><div style="clear:both"></div></div>
+<div class="section" id="layouts">
+<h2>Layouts<a class="headerlink" href="#layouts" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<p>How to leverage Panel layout components to achieve complex layouts.</p>
+<div class="sphx-glr-thumbcontainer example" tooltip="Distribution Tabs"><div class="figure align-default" id="id25">
+<img alt="../_images/distribution_tabs.png" src="../_images/distribution_tabs.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="layout/distribution_tabs.html#layout-gallery-distribution-tabs"><span class="std std-ref">Distribution Tabs</span></a></span><a class="headerlink" href="#id25" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Dynamic Tabs"><div class="figure align-default" id="id26">
+<img alt="../_images/dynamic_tabs.png" src="../_images/dynamic_tabs.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="layout/dynamic_tabs.html#layout-gallery-dynamic-tabs"><span class="std std-ref">Dynamic Tabs</span></a></span><a class="headerlink" href="#id26" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Plot With Columns"><div class="figure align-default" id="id27">
+<img alt="../_images/plot_with_columns.png" src="../_images/plot_with_columns.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="layout/plot_with_columns.html#layout-gallery-plot-with-columns"><span class="std std-ref">Plot With Columns</span></a></span><a class="headerlink" href="#id27" title="Permalink to this image">¶</a></p>
+</div>
+</div><div style="clear:both"></div></div>
+<div class="section" id="dynamic-uis">
+<h2>Dynamic UIs<a class="headerlink" href="#dynamic-uis" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<p>Examples demonstrating how to build dynamic UIs with components thatare added or removed interactively.</p>
+<div class="sphx-glr-thumbcontainer example" tooltip="Dynamic Plot Layout"><div class="figure align-default" id="id28">
+<img alt="../_images/dynamic_plot_layout.png" src="../_images/dynamic_plot_layout.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="dynamic/dynamic_plot_layout.html#dynamic-gallery-dynamic-plot-layout"><span class="std std-ref">Dynamic Plot Layout</span></a></span><a class="headerlink" href="#id28" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Dynamic Timeseries Image Analysis"><div class="figure align-default" id="id29">
+<img alt="../_images/dynamic_timeseries_image_analysis.png" src="../_images/dynamic_timeseries_image_analysis.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="dynamic/dynamic_timeseries_image_analysis.html#dynamic-gallery-dynamic-timeseries-image-analysis"><span class="std std-ref">Dynamic Timeseries Image Analysis</span></a></span><a class="headerlink" href="#id29" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Dynamic Ui"><div class="figure align-default" id="id30">
+<img alt="../_images/dynamic_ui.png" src="../_images/dynamic_ui.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="dynamic/dynamic_ui.html#dynamic-gallery-dynamic-ui"><span class="std std-ref">Dynamic Ui</span></a></span><a class="headerlink" href="#id30" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Dynamic Widget Values"><div class="figure align-default" id="id31">
+<img alt="../_images/dynamic_widget_values.png" src="../_images/dynamic_widget_values.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="dynamic/dynamic_widget_values.html#dynamic-gallery-dynamic-widget-values"><span class="std std-ref">Dynamic Widget Values</span></a></span><a class="headerlink" href="#id31" title="Permalink to this image">¶</a></p>
+</div>
+</div><div style="clear:both"></div></div>
+<div class="section" id="param-based-apps">
+<h2>Param based apps<a class="headerlink" href="#param-based-apps" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<p>Using the Param library to express UIs independently of Panel.</p>
+<div class="sphx-glr-thumbcontainer example" tooltip="Action Button"><div class="figure align-default" id="id32">
+<img alt="../_images/action_button.png" src="../_images/action_button.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="param/action_button.html#param-gallery-action-button"><span class="std std-ref">Action Button</span></a></span><a class="headerlink" href="#id32" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Deck Gl Global Power Plants"><div class="figure align-default" id="id33">
+<img alt="../_images/deck_gl_global_power_plants.png" src="../_images/deck_gl_global_power_plants.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="param/deck_gl_global_power_plants.html#param-gallery-deck-gl-global-power-plants"><span class="std std-ref">Deck Gl Global Power Plants</span></a></span><a class="headerlink" href="#id33" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Download Upload Csv"><div class="figure align-default" id="id34">
+<img alt="../_images/download_upload_csv.png" src="../_images/download_upload_csv.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="param/download_upload_csv.html#param-gallery-download-upload-csv"><span class="std std-ref">Download Upload Csv</span></a></span><a class="headerlink" href="#id34" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Loading Indicator"><div class="figure align-default" id="id35">
+<img alt="../_images/loading_indicator.png" src="../_images/loading_indicator.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="param/loading_indicator.html#param-gallery-loading-indicator"><span class="std std-ref">Loading Indicator</span></a></span><a class="headerlink" href="#id35" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Param Subobjects"><div class="figure align-default" id="id36">
+<img alt="../_images/param_subobjects.png" src="../_images/param_subobjects.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="param/param_subobjects.html#param-gallery-param-subobjects"><span class="std std-ref">Param Subobjects</span></a></span><a class="headerlink" href="#id36" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Precedence"><div class="figure align-default" id="id37">
+<img alt="../_images/precedence.png" src="../_images/precedence.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="param/precedence.html#param-gallery-precedence"><span class="std std-ref">Precedence</span></a></span><a class="headerlink" href="#id37" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Reactive Plots"><div class="figure align-default" id="id38">
+<img alt="../_images/reactive_plots.png" src="../_images/reactive_plots.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="param/reactive_plots.html#param-gallery-reactive-plots"><span class="std std-ref">Reactive Plots</span></a></span><a class="headerlink" href="#id38" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Reactive Tables"><div class="figure align-default" id="id39">
+<img alt="../_images/reactive_tables.png" src="../_images/reactive_tables.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="param/reactive_tables.html#param-gallery-reactive-tables"><span class="std std-ref">Reactive Tables</span></a></span><a class="headerlink" href="#id39" title="Permalink to this image">¶</a></p>
+</div>
+</div><div style="clear:both"></div></div>
+<div class="section" id="streaming">
+<h2>Streaming<a class="headerlink" href="#streaming" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<p>Streaming data to a visual component.</p>
+<div class="sphx-glr-thumbcontainer example" tooltip="Hardware Automation"><div class="figure align-default" id="id40">
+<img alt="../_images/hardware_automation.png" src="../_images/hardware_automation.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="streaming/hardware_automation.html#streaming-gallery-hardware-automation"><span class="std std-ref">Hardware Automation</span></a></span><a class="headerlink" href="#id40" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Streaming Bokeh"><div class="figure align-default" id="id41">
+<img alt="../_images/streaming_bokeh.png" src="../_images/streaming_bokeh.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="streaming/streaming_bokeh.html#streaming-gallery-streaming-bokeh"><span class="std std-ref">Streaming Bokeh</span></a></span><a class="headerlink" href="#id41" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Streaming Perspective"><div class="figure align-default" id="id42">
+<img alt="../_images/streaming_perspective.png" src="../_images/streaming_perspective.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="streaming/streaming_perspective.html#streaming-gallery-streaming-perspective"><span class="std std-ref">Streaming Perspective</span></a></span><a class="headerlink" href="#id42" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Streaming Tabulator"><div class="figure align-default" id="id43">
+<img alt="../_images/streaming_tabulator.png" src="../_images/streaming_tabulator.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="streaming/streaming_tabulator.html#streaming-gallery-streaming-tabulator"><span class="std std-ref">Streaming Tabulator</span></a></span><a class="headerlink" href="#id43" title="Permalink to this image">¶</a></p>
+</div>
+</div><div style="clear:both"></div></div>
+<div class="section" id="custom-components">
+<h2>Custom components<a class="headerlink" href="#custom-components" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<p>Components created using Panel’s ReactiveHTML class.</p>
+<div class="sphx-glr-thumbcontainer example" tooltip="Canvasdraw"><div class="figure align-default" id="id44">
+<img alt="../_images/CanvasDraw.png" src="../_images/CanvasDraw.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="components/CanvasDraw.html#components-gallery-canvasdraw"><span class="std std-ref">Canvasdraw</span></a></span><a class="headerlink" href="#id44" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Leafletheatmap"><div class="figure align-default" id="id45">
+<img alt="../_images/LeafletHeatMap.png" src="../_images/LeafletHeatMap.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="components/LeafletHeatMap.html#components-gallery-leafletheatmap"><span class="std std-ref">Leafletheatmap</span></a></span><a class="headerlink" href="#id45" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Materialui"><div class="figure align-default" id="id46">
+<img alt="../_images/MaterialUI.png" src="../_images/MaterialUI.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="components/MaterialUI.html#components-gallery-materialui"><span class="std std-ref">Materialui</span></a></span><a class="headerlink" href="#id46" title="Permalink to this image">¶</a></p>
+</div>
+</div><div style="clear:both"></div></div>
+<div class="section" id="linking">
+<h2>Linking<a class="headerlink" href="#linking" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<p>Using Javascript based links to define interactivity without without requiring a live kernel.</p>
+<div class="sphx-glr-thumbcontainer example" tooltip="Bokeh Property Editor"><div class="figure align-default" id="id47">
+<img alt="../_images/bokeh_property_editor.png" src="../_images/bokeh_property_editor.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="links/bokeh_property_editor.html#links-gallery-bokeh-property-editor"><span class="std std-ref">Bokeh Property Editor</span></a></span><a class="headerlink" href="#id47" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Deck Gl Json Editor"><div class="figure align-default" id="id48">
+<img alt="../_images/deck_gl_json_editor.png" src="../_images/deck_gl_json_editor.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="links/deck_gl_json_editor.html#links-gallery-deck-gl-json-editor"><span class="std std-ref">Deck Gl Json Editor</span></a></span><a class="headerlink" href="#id48" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Holoviews Glyph Link"><div class="figure align-default" id="id49">
+<img alt="../_images/holoviews_glyph_link.png" src="../_images/holoviews_glyph_link.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="links/holoviews_glyph_link.html#links-gallery-holoviews-glyph-link"><span class="std std-ref">Holoviews Glyph Link</span></a></span><a class="headerlink" href="#id49" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Plotly Link"><div class="figure align-default" id="id50">
+<img alt="../_images/plotly_link.png" src="../_images/plotly_link.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="links/plotly_link.html#links-gallery-plotly-link"><span class="std std-ref">Plotly Link</span></a></span><a class="headerlink" href="#id50" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Vega Heatmap Link"><div class="figure align-default" id="id51">
+<img alt="../_images/vega_heatmap_link.png" src="../_images/vega_heatmap_link.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="links/vega_heatmap_link.html#links-gallery-vega-heatmap-link"><span class="std std-ref">Vega Heatmap Link</span></a></span><a class="headerlink" href="#id51" title="Permalink to this image">¶</a></p>
+</div>
+</div><div style="clear:both"></div></div>
+<div class="section" id="external-libraries">
+<h2>External libraries<a class="headerlink" href="#external-libraries" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<p>Wrapping external libraries with Panel.</p>
+<div class="sphx-glr-thumbcontainer example" tooltip="Datatable"><div class="figure align-default" id="id52">
+<img alt="../_images/DataTable.png" src="../_images/DataTable.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="external/DataTable.html#external-gallery-datatable"><span class="std std-ref">Datatable</span></a></span><a class="headerlink" href="#id52" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Folium"><div class="figure align-default" id="id53">
+<img alt="../_images/Folium.png" src="../_images/Folium.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="external/Folium.html#external-gallery-folium"><span class="std std-ref">Folium</span></a></span><a class="headerlink" href="#id53" title="Permalink to this image">¶</a></p>
+</div>
+</div><div class="sphx-glr-thumbcontainer example" tooltip="Deck.Gl"><div class="figure align-default" id="id54">
+<img alt="../_images/deck.gl.png" src="../_images/deck.gl.png"/>
+<p class="caption"><span class="caption-text"><a class="reference internal" href="external/deck.gl.html#external-gallery-deck-gl"><span class="std std-ref">Deck.Gl</span></a></span><a class="headerlink" href="#id54" title="Permalink to this image">¶</a></p>
+</div>
+</div><div style="clear:both"></div></div>
+</div>
+</div>
+<div class="prev-next-bottom">
+<a class="left-prev" href="../user_guide/Django_Apps.html" id="prev-link" title="previous page">Django Apps</a>
+<a class="right-next" href="demos/VTKInteractive.html" id="next-link" title="next page">Vtkinteractive</a>
+</div>
+</main>
+</div>
+</div>
+<script src="../_static/js/index.1c5a1a01449ed65a7b51.js"></script>
+<footer class="footer mt-5 mt-md-0">
+<div class="container">
+<div class="footer-item">
+<p class="copyright">
+    © Copyright 2019-2021 Panel contributors.<br/>
+</p>
+</div>
+<div class="footer-item">
+<p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.5.3.<br/>
+</p>
+</div>
+</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<map id="inheritance40f21762df" name="inheritance40f21762df">
+<area shape="rect" id="node1" title="Parser base class which provides some common support methods used" alt="" coords="71,142,202,160"/>
+<area shape="rect" id="node10" title="Find tags and other markup and call handler functions." alt="" coords="309,142,432,160"/>
+<area shape="rect" id="node2" title="Base class for all class types that have Bokeh properties." alt="" coords="57,38,217,56"/>
+<area shape="rect" id="node5" title="Base class for all objects stored in Bokeh &#160;|Document| instances." alt="" coords="318,73,423,91"/>
+<area shape="rect" id="node3" title="Base class for all Bokeh events." alt="" coords="84,4,190,21"/>
+<area shape="rect" id="node4" title="Base class for all Bokeh Model events." alt="" coords="304,4,437,21"/>
+<area shape="rect" id="node11" href="#panel.models.reactive_html.DOMEvent" target="_top" title="panel.models.reactive_html.DOMEvent" alt="" coords="493,4,687,21"/>
+<area shape="rect" id="node9" title="The base class for layoutable components." alt="" coords="504,73,676,91"/>
+<area shape="rect" id="node6" title="A mixin class to provide an interface for registering and" alt="" coords="4,73,270,91"/>
+<area shape="rect" id="node7" title="A mixin class to provide an interface for registering and" alt="" coords="10,107,264,125"/>
+<area shape="rect" id="node8" title="A component which size is determined by its HTML content." alt="" coords="743,73,904,91"/>
+<area shape="rect" id="node12" href="#panel.models.reactive_html.ReactiveHTML" target="_top" title="panel.models.reactive_html.ReactiveHTML" alt="" coords="938,73,1148,91"/>
+<area shape="rect" id="node13" href="#panel.models.reactive_html.ReactiveHTMLParser" target="_top" title="panel.models.reactive_html.ReactiveHTMLParser" alt="" coords="471,142,709,160"/>
+</map>

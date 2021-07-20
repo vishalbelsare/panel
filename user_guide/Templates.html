@@ -1,0 +1,1189 @@
+
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Templates — Panel 0.12.0 documentation</title>
+<link href="../_static/css/theme.css" rel="stylesheet"/>
+<link href="../_static/css/index.c5995385ac14fb8791e8eb36b4908be2.css" rel="stylesheet"/>
+<link href="../_static/vendor/fontawesome/5.13.0/css/all.min.css" rel="stylesheet"/>
+<link as="font" crossorigin="" href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2" rel="preload" type="font/woff2"/>
+<link as="font" crossorigin="" href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2" rel="preload" type="font/woff2"/>
+<link href="../_static/pygments.css" rel="stylesheet" type="text/css">
+<link href="../_static/basic.css" rel="stylesheet" type="text/css">
+<link href="../_static/togglebutton.css" rel="stylesheet" type="text/css">
+<link href="../_static/mystnb.css" rel="stylesheet" type="text/css"/>
+<link href="../_static/graphviz.css" rel="stylesheet" type="text/css"/>
+<link href="../_static/nbsite.css" rel="stylesheet" type="text/css"/>
+<link href="../_static/css/custom.css" rel="stylesheet" type="text/css"/>
+<link as="script" href="../_static/js/index.1c5a1a01449ed65a7b51.js" rel="preload"/>
+<script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+<script src="../_static/jquery.js"></script>
+<script src="../_static/underscore.js"></script>
+<script src="../_static/doctools.js"></script>
+<script src="../_static/togglebutton.js"></script>
+<script>var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+<link href="../_static/favicon.ico" rel="shortcut icon">
+<link href="../genindex.html" rel="index" title="Index"/>
+<link href="../search.html" rel="search" title="Search"/>
+<link href="Server_Deployment.html" rel="next" title="Server Deployment"/>
+<link href="Pipelines.html" rel="prev" title="Pipelines"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="en" name="docsearch:language"/>
+</link></link></link></link></head>
+<body data-offset="80" data-spy="scroll" data-target="#bd-toc-nav">
+<div class="container-fluid" id="banner"></div>
+<nav class="navbar navbar-dark navbar-expand-lg bg-dark fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+<div id="navbar-start">
+<a class="navbar-brand" href="../index.html">
+<img alt="logo" class="logo" src="../_static/logo_horizontal.png"/>
+</a>
+</div>
+<button aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-target="#navbar-collapsible" data-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<div class="col-lg-9 collapse navbar-collapse" id="navbar-collapsible">
+<div class="mr-auto" id="navbar-center">
+<div class="navbar-center-item">
+<ul class="navbar-nav" id="navbar-main-elements">
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../getting_started/index.html">
+  Getting Started
+ </a>
+</li>
+<li class="toctree-l1 current active nav-item">
+<a class="reference internal nav-link" href="index.html">
+  User Guide
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../gallery/index.html">
+  Gallery
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../reference/index.html">
+  Reference Gallery
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../developer_guide/index.html">
+  Developers
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../api/index.html">
+  API
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../releases.html">
+  Releases
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../FAQ.html">
+  FAQ
+ </a>
+</li>
+<li class="toctree-l1 nav-item">
+<a class="reference internal nav-link" href="../about/index.html">
+  About
+ </a>
+</li>
+</ul>
+</div>
+</div>
+<div id="navbar-end">
+<div class="navbar-end-item">
+<ul aria-label="Icon Links" class="navbar-nav" id="navbar-icon-links">
+<li class="nav-item">
+<a class="nav-link" href="https://github.com/holoviz/panel" rel="noopener" target="_blank" title="GitHub">
+<span><i class="fab fa-github-square"></i></span>
+<label class="sr-only">GitHub</label>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://twitter.com/Panel_Org" rel="noopener" target="_blank" title="Twitter">
+<span><i class="fab fa-twitter-square"></i></span>
+<label class="sr-only">Twitter</label>
+</a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="https://discourse.holoviz.org/" rel="noopener" target="_blank" title="Discourse">
+<span><i class="fab fa-discourse"></i></span>
+<label class="sr-only">Discourse</label>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<div class="container-xl">
+<div class="row">
+<!-- Only show if we have sidebars configured, else just a small margin  -->
+<div class="col-12 col-md-2 bd-sidebar"><form action="../search.html" class="bd-search d-flex align-items-center" method="get">
+<i class="icon fas fa-search"></i>
+<input aria-label="Search the docs ..." autocomplete="off" class="form-control" id="search-input" name="q" placeholder="Search the docs ..." type="search"/>
+</form><nav aria-label="Main navigation" class="bd-links" id="bd-docs-nav">
+<div class="bd-toc-item active">
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1">
+<a class="reference internal" href="Overview.html">
+   Overview
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Components.html">
+   Components
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="APIs.html">
+   APIs
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Customization.html">
+   Customization
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Deploy_and_Export.html">
+   Deploy &amp; Export
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Interact.html">
+   Interact
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Widgets.html">
+   Widgets
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Param.html">
+   Parameters
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Links.html">
+   Linking
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Pipelines.html">
+   Pipelines
+  </a>
+</li>
+<li class="toctree-l1 current active">
+<a class="current reference internal" href="#">
+   Templates
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Server_Deployment.html">
+   Server Deployment
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Custom_Components.html">
+   Building Custom Components
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Async_and_Concurrency.html">
+   Asynchronous and Concurrent Process
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Authentication.html">
+   Authentication
+  </a>
+</li>
+<li class="toctree-l1">
+<a class="reference internal" href="Django_Apps.html">
+   Django Apps
+  </a>
+</li>
+</ul>
+</div>
+</nav>
+</div>
+<div class="d-none d-xl-block col-xl-2 bd-toc">
+<div class="toc-item">
+<div class="tocsection onthispage pt-5 pb-3">
+<i class="fas fa-list"></i> On this page
+</div>
+<nav id="bd-toc-nav">
+<ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#what-is-a-template">
+   What is a template?
+  </a>
+</li>
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#using-default-templates">
+   Using default templates
+  </a>
+<ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#supported-templates">
+     Supported templates
+    </a>
+</li>
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#using-templates">
+     Using templates
+    </a>
+<ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry">
+<a class="reference internal nav-link" href="#explicit-constructor">
+       Explicit constructor
+      </a>
+</li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#global-template">
+     Global template
+    </a>
+</li>
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#theming">
+     Theming
+    </a>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry">
+<a class="reference internal nav-link" href="#using-custom-templates">
+   Using custom templates
+  </a>
+<ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry">
+<a class="reference internal nav-link" href="#loading-template-from-file">
+     Loading template from file
+    </a>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</div>
+<div class="toc-item">
+</div>
+<a href="https://mybinder.org/v2/gh/holoviz/panel/master?urlpath=lab/tree/examples/user_guide/Templates">Open this example in Binder</a>
+</div>
+<main class="col-12 col-md-10 col-xl-8 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+<div>
+<div class="section" id="templates">
+<h1>Templates<a class="headerlink" href="#templates" title="Permalink to this headline">¶</a></h1>
+<p>When deploying a Panel app or dashboard as a Bokeh application, it is rendered into a default template that serves the JS and CSS resources as well as the actual Panel object being shown. However, it is often desirable to customize the layout of the deployed app, or even to embed multiple separate panels into an app. The <code class="docutils literal notranslate"><span class="pre">Template</span></code> component in Panel allows customizing this default template, including the ability to rendering multiple components in a single document easily.</p>
+<div class="section" id="what-is-a-template">
+<h2>What is a template?<a class="headerlink" href="#what-is-a-template" title="Permalink to this headline">¶</a></h2>
+<p>A template is defined using the <a class="reference external" href="http://jinja.pocoo.org/docs/">Jinja2</a> templating language, which makes it straightforward to extend the default template in various ways or even replace it entirely. However most users can avoid modifying the jinja2 template directly by using one of the default templates shipped with Panel itself.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">panel</span> <span class="k">as</span> <span class="nn">pn</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">holoviews</span> <span class="k">as</span> <span class="nn">hv</span>
+
+<span class="n">pn</span><span class="o">.</span><span class="n">extension</span><span class="p">(</span><span class="n">sizing_mode</span><span class="o">=</span><span class="s1">'stretch_width'</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<script type="application/javascript">
+(function(root) {
+  function now() {
+    return new Date();
+  }
+
+  var force = true;
+
+  if (typeof root._bokeh_onload_callbacks === "undefined" || force === true) {
+    root._bokeh_onload_callbacks = [];
+    root._bokeh_is_loading = undefined;
+  }
+
+  if (typeof (root._bokeh_timeout) === "undefined" || force === true) {
+    root._bokeh_timeout = Date.now() + 5000;
+    root._bokeh_failed_load = false;
+  }
+
+  function run_callbacks() {
+    try {
+      root._bokeh_onload_callbacks.forEach(function(callback) {
+        if (callback != null)
+          callback();
+      });
+    } finally {
+      delete root._bokeh_onload_callbacks
+    }
+    console.debug("Bokeh: all callbacks have finished");
+  }
+
+  function load_libs(css_urls, js_urls, js_modules, callback) {
+    if (css_urls == null) css_urls = [];
+    if (js_urls == null) js_urls = [];
+    if (js_modules == null) js_modules = [];
+
+    root._bokeh_onload_callbacks.push(callback);
+    if (root._bokeh_is_loading > 0) {
+      console.debug("Bokeh: BokehJS is being loaded, scheduling callback at", now());
+      return null;
+    }
+    if (js_urls.length === 0 && js_modules.length === 0) {
+      run_callbacks();
+      return null;
+    }
+    console.debug("Bokeh: BokehJS not loaded, scheduling load and callback at", now());
+    root._bokeh_is_loading = css_urls.length + js_urls.length + js_modules.length;
+
+    function on_load() {
+      root._bokeh_is_loading--;
+      if (root._bokeh_is_loading === 0) {
+        console.debug("Bokeh: all BokehJS libraries/stylesheets loaded");
+        run_callbacks()
+      }
+    }
+
+    function on_error() {
+      console.error("failed to load " + url);
+    }
+
+    for (var i = 0; i < css_urls.length; i++) {
+      var url = css_urls[i];
+      const element = document.createElement("link");
+      element.onload = on_load;
+      element.onerror = on_error;
+      element.rel = "stylesheet";
+      element.type = "text/css";
+      element.href = url;
+      console.debug("Bokeh: injecting link tag for BokehJS stylesheet: ", url);
+      document.body.appendChild(element);
+    }
+
+    var skip = [];
+    if (window.requirejs) {
+      window.requirejs.config({'paths': {}, 'shim': {}});
+      
+    }
+    for (var i = 0; i < js_urls.length; i++) {
+      var url = js_urls[i];
+      if (skip.indexOf(url) >= 0) { on_load(); continue; }
+      var element = document.createElement('script');
+      element.onload = on_load;
+      element.onerror = on_error;
+      element.async = false;
+      element.src = url;
+      console.debug("Bokeh: injecting script tag for BokehJS library: ", url);
+      document.head.appendChild(element);
+    }
+    for (var i = 0; i < js_modules.length; i++) {
+      var url = js_modules[i];
+      if (skip.indexOf(url) >= 0) { on_load(); continue; }
+      var element = document.createElement('script');
+      element.onload = on_load;
+      element.onerror = on_error;
+      element.async = false;
+      element.src = url;
+      element.type = "module";
+      console.debug("Bokeh: injecting script tag for BokehJS library: ", url);
+      document.head.appendChild(element);
+    }
+    if (!js_urls.length && !js_modules.length) {
+      on_load()
+    }
+  };
+
+  function inject_raw_css(css) {
+    const element = document.createElement("style");
+    element.appendChild(document.createTextNode(css));
+    document.body.appendChild(element);
+  }
+
+  var js_urls = ["https://cdn.bokeh.org/bokeh/release/bokeh-2.3.3.min.js", "https://cdn.bokeh.org/bokeh/release/bokeh-widgets-2.3.3.min.js", "https://cdn.bokeh.org/bokeh/release/bokeh-tables-2.3.3.min.js", "https://unpkg.com/@holoviz/panel@0.12.0/dist/panel.min.js"];
+  var js_modules = [];
+  var css_urls = ["https://unpkg.com/@holoviz/panel@0.12.0/dist/css/markdown.css", "https://unpkg.com/@holoviz/panel@0.12.0/dist/css/json.css", "https://unpkg.com/@holoviz/panel@0.12.0/dist/css/loading.css", "https://unpkg.com/@holoviz/panel@0.12.0/dist/css/dataframe.css", "https://unpkg.com/@holoviz/panel@0.12.0/dist/css/card.css", "https://unpkg.com/@holoviz/panel@0.12.0/dist/css/alerts.css", "https://unpkg.com/@holoviz/panel@0.12.0/dist/css/widgets.css"];
+  var inline_js = [
+    function(Bokeh) {
+      inject_raw_css("\n    .bk.pn-loading.arcs:before {\n      background-image: url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiBzdHlsZT0ibWFyZ2luOiBhdXRvOyBiYWNrZ3JvdW5kOiBub25lOyBkaXNwbGF5OiBibG9jazsgc2hhcGUtcmVuZGVyaW5nOiBhdXRvOyIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHByZXNlcnZlQXNwZWN0UmF0aW89InhNaWRZTWlkIj4gIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjMyIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZT0iI2MzYzNjMyIgc3Ryb2tlLWRhc2hhcnJheT0iNTAuMjY1NDgyNDU3NDM2NjkgNTAuMjY1NDgyNDU3NDM2NjkiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+ICAgIDxhbmltYXRlVHJhbnNmb3JtIGF0dHJpYnV0ZU5hbWU9InRyYW5zZm9ybSIgdHlwZT0icm90YXRlIiByZXBlYXRDb3VudD0iaW5kZWZpbml0ZSIgZHVyPSIxcyIga2V5VGltZXM9IjA7MSIgdmFsdWVzPSIwIDUwIDUwOzM2MCA1MCA1MCI+PC9hbmltYXRlVHJhbnNmb3JtPiAgPC9jaXJjbGU+PC9zdmc+\")\n    }\n    ");
+    },
+    function(Bokeh) {
+      Bokeh.set_log_level("info");
+    },
+    function(Bokeh) {} // ensure no trailing comma for IE
+  ];
+
+  function run_inline_js() {
+    if ((root.Bokeh !== undefined) || (force === true)) {
+      for (var i = 0; i < inline_js.length; i++) {
+        inline_js[i].call(root, root.Bokeh);
+      }} else if (Date.now() < root._bokeh_timeout) {
+      setTimeout(run_inline_js, 100);
+    } else if (!root._bokeh_failed_load) {
+      console.log("Bokeh: BokehJS failed to load within specified timeout.");
+      root._bokeh_failed_load = true;
+    }
+  }
+
+  if (root._bokeh_is_loading === 0) {
+    console.debug("Bokeh: BokehJS loaded, going straight to plotting");
+    run_inline_js();
+  } else {
+    load_libs(css_urls, js_urls, js_modules, function() {
+      console.debug("Bokeh: BokehJS plotting callback run at", now());
+      run_inline_js();
+    });
+  }
+}(window));</script><script type="application/javascript">
+if ((window.PyViz === undefined) || (window.PyViz instanceof HTMLElement)) {
+  window.PyViz = {comms: {}, comm_status:{}, kernels:{}, receivers: {}, plot_index: []}
+}
+
+
+    function JupyterCommManager() {
+    }
+
+    JupyterCommManager.prototype.register_target = function(plot_id, comm_id, msg_handler) {
+      if (window.comm_manager || ((window.Jupyter !== undefined) && (Jupyter.notebook.kernel != null))) {
+        var comm_manager = window.comm_manager || Jupyter.notebook.kernel.comm_manager;
+        comm_manager.register_target(comm_id, function(comm) {
+          comm.on_msg(msg_handler);
+        });
+      } else if ((plot_id in window.PyViz.kernels) && (window.PyViz.kernels[plot_id])) {
+        window.PyViz.kernels[plot_id].registerCommTarget(comm_id, function(comm) {
+          comm.onMsg = msg_handler;
+        });
+      } else if (typeof google != 'undefined' && google.colab.kernel != null) {
+        google.colab.kernel.comms.registerTarget(comm_id, (comm) => {
+          var messages = comm.messages[Symbol.asyncIterator]();
+          function processIteratorResult(result) {
+            var message = result.value;
+            console.log(message)
+            var content = {data: message.data, comm_id};
+            var buffers = []
+            for (var buffer of message.buffers || []) {
+              buffers.push(new DataView(buffer))
+            }
+            var metadata = message.metadata || {};
+            var msg = {content, buffers, metadata}
+            msg_handler(msg);
+            return messages.next().then(processIteratorResult);
+          }
+          return messages.next().then(processIteratorResult);
+        })
+      }
+    }
+
+    JupyterCommManager.prototype.get_client_comm = function(plot_id, comm_id, msg_handler) {
+      if (comm_id in window.PyViz.comms) {
+        return window.PyViz.comms[comm_id];
+      } else if (window.comm_manager || ((window.Jupyter !== undefined) && (Jupyter.notebook.kernel != null))) {
+        var comm_manager = window.comm_manager || Jupyter.notebook.kernel.comm_manager;
+        var comm = comm_manager.new_comm(comm_id, {}, {}, {}, comm_id);
+        if (msg_handler) {
+          comm.on_msg(msg_handler);
+        }
+      } else if ((plot_id in window.PyViz.kernels) && (window.PyViz.kernels[plot_id])) {
+        var comm = window.PyViz.kernels[plot_id].connectToComm(comm_id);
+        comm.open();
+        if (msg_handler) {
+          comm.onMsg = msg_handler;
+        }
+      } else if (typeof google != 'undefined' && google.colab.kernel != null) {
+        var comm_promise = google.colab.kernel.comms.open(comm_id)
+        comm_promise.then((comm) => {
+          window.PyViz.comms[comm_id] = comm;
+          if (msg_handler) {
+            var messages = comm.messages[Symbol.asyncIterator]();
+            function processIteratorResult(result) {
+              var message = result.value;
+              var content = {data: message.data};
+              var metadata = message.metadata || {comm_id};
+              var msg = {content, metadata}
+              msg_handler(msg);
+              return messages.next().then(processIteratorResult);
+            }
+            return messages.next().then(processIteratorResult);
+          }
+        }) 
+        var sendClosure = (data, metadata, buffers, disposeOnDone) => {
+          return comm_promise.then((comm) => {
+            comm.send(data, metadata, buffers, disposeOnDone);
+          });
+        };
+        var comm = {
+          send: sendClosure
+        };
+      }
+      window.PyViz.comms[comm_id] = comm;
+      return comm;
+    }
+    window.PyViz.comm_manager = new JupyterCommManager();
+    
+
+
+var JS_MIME_TYPE = 'application/javascript';
+var HTML_MIME_TYPE = 'text/html';
+var EXEC_MIME_TYPE = 'application/vnd.holoviews_exec.v0+json';
+var CLASS_NAME = 'output';
+
+/**
+ * Render data to the DOM node
+ */
+function render(props, node) {
+  var div = document.createElement("div");
+  var script = document.createElement("script");
+  node.appendChild(div);
+  node.appendChild(script);
+}
+
+/**
+ * Handle when a new output is added
+ */
+function handle_add_output(event, handle) {
+  var output_area = handle.output_area;
+  var output = handle.output;
+  if ((output.data == undefined) || (!output.data.hasOwnProperty(EXEC_MIME_TYPE))) {
+    return
+  }
+  var id = output.metadata[EXEC_MIME_TYPE]["id"];
+  var toinsert = output_area.element.find("." + CLASS_NAME.split(' ')[0]);
+  if (id !== undefined) {
+    var nchildren = toinsert.length;
+    var html_node = toinsert[nchildren-1].children[0];
+    html_node.innerHTML = output.data[HTML_MIME_TYPE];
+    var scripts = [];
+    var nodelist = html_node.querySelectorAll("script");
+    for (var i in nodelist) {
+      if (nodelist.hasOwnProperty(i)) {
+        scripts.push(nodelist[i])
+      }
+    }
+
+    scripts.forEach( function (oldScript) {
+      var newScript = document.createElement("script");
+      var attrs = [];
+      var nodemap = oldScript.attributes;
+      for (var j in nodemap) {
+        if (nodemap.hasOwnProperty(j)) {
+          attrs.push(nodemap[j])
+        }
+      }
+      attrs.forEach(function(attr) { newScript.setAttribute(attr.name, attr.value) });
+      newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+      oldScript.parentNode.replaceChild(newScript, oldScript);
+    });
+    if (JS_MIME_TYPE in output.data) {
+      toinsert[nchildren-1].children[1].textContent = output.data[JS_MIME_TYPE];
+    }
+    output_area._hv_plot_id = id;
+    if ((window.Bokeh !== undefined) && (id in Bokeh.index)) {
+      window.PyViz.plot_index[id] = Bokeh.index[id];
+    } else {
+      window.PyViz.plot_index[id] = null;
+    }
+  } else if (output.metadata[EXEC_MIME_TYPE]["server_id"] !== undefined) {
+    var bk_div = document.createElement("div");
+    bk_div.innerHTML = output.data[HTML_MIME_TYPE];
+    var script_attrs = bk_div.children[0].attributes;
+    for (var i = 0; i < script_attrs.length; i++) {
+      toinsert[toinsert.length - 1].childNodes[1].setAttribute(script_attrs[i].name, script_attrs[i].value);
+    }
+    // store reference to server id on output_area
+    output_area._bokeh_server_id = output.metadata[EXEC_MIME_TYPE]["server_id"];
+  }
+}
+
+/**
+ * Handle when an output is cleared or removed
+ */
+function handle_clear_output(event, handle) {
+  var id = handle.cell.output_area._hv_plot_id;
+  var server_id = handle.cell.output_area._bokeh_server_id;
+  if (((id === undefined) || !(id in PyViz.plot_index)) && (server_id !== undefined)) { return; }
+  var comm = window.PyViz.comm_manager.get_client_comm("hv-extension-comm", "hv-extension-comm", function () {});
+  if (server_id !== null) {
+    comm.send({event_type: 'server_delete', 'id': server_id});
+    return;
+  } else if (comm !== null) {
+    comm.send({event_type: 'delete', 'id': id});
+  }
+  delete PyViz.plot_index[id];
+  if ((window.Bokeh !== undefined) & (id in window.Bokeh.index)) {
+    var doc = window.Bokeh.index[id].model.document
+    doc.clear();
+    const i = window.Bokeh.documents.indexOf(doc);
+    if (i > -1) {
+      window.Bokeh.documents.splice(i, 1);
+    }
+  }
+}
+
+/**
+ * Handle kernel restart event
+ */
+function handle_kernel_cleanup(event, handle) {
+  delete PyViz.comms["hv-extension-comm"];
+  window.PyViz.plot_index = {}
+}
+
+/**
+ * Handle update_display_data messages
+ */
+function handle_update_output(event, handle) {
+  handle_clear_output(event, {cell: {output_area: handle.output_area}})
+  handle_add_output(event, handle)
+}
+
+function register_renderer(events, OutputArea) {
+  function append_mime(data, metadata, element) {
+    // create a DOM node to render to
+    var toinsert = this.create_output_subarea(
+    metadata,
+    CLASS_NAME,
+    EXEC_MIME_TYPE
+    );
+    this.keyboard_manager.register_events(toinsert);
+    // Render to node
+    var props = {data: data, metadata: metadata[EXEC_MIME_TYPE]};
+    render(props, toinsert[0]);
+    element.append(toinsert);
+    return toinsert
+  }
+
+  events.on('output_added.OutputArea', handle_add_output);
+  events.on('output_updated.OutputArea', handle_update_output);
+  events.on('clear_output.CodeCell', handle_clear_output);
+  events.on('delete.Cell', handle_clear_output);
+  events.on('kernel_ready.Kernel', handle_kernel_cleanup);
+
+  OutputArea.prototype.register_mime_type(EXEC_MIME_TYPE, append_mime, {
+    safe: true,
+    index: 0
+  });
+}
+
+if (window.Jupyter !== undefined) {
+  try {
+    var events = require('base/js/events');
+    var OutputArea = require('notebook/js/outputarea').OutputArea;
+    if (OutputArea.prototype.mime_types().indexOf(EXEC_MIME_TYPE) == -1) {
+      register_renderer(events, OutputArea);
+    }
+  } catch(err) {
+  }
+}
+</script></div>
+</div>
+</div>
+<div class="section" id="using-default-templates">
+<h2>Using default templates<a class="headerlink" href="#using-default-templates" title="Permalink to this headline">¶</a></h2>
+<p>For a large variety of use cases we do not need complete control over the exact layout of each individual component on the page we just want to achieve a more polished look and feel. For these cases Panel ships with a number of default templates, which are defined by declaring four main content areas on the page, which can be populated as desired:</p>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">header</span></code></strong>: The header area of the HTML page</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">sidebar</span></code></strong>: A collapsible sidebar</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">main</span></code></strong>: The main area of the application</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">modal</span></code></strong>: A modal that can be toggled opened and closed with <code class="docutils literal notranslate"><span class="pre">.open_modal()</span></code> and <code class="docutils literal notranslate"><span class="pre">.close_modal()</span></code> methods</p></li>
+</ul>
+<p>These three areas behave very similarly to other Panel layout components and have list-like semantics. This means we can easily append new components into these areas. Unlike other layout components however, the contents of the areas is fixed once rendered. If you need a dynamic layout you should therefore insert a regular Panel layout component (e.g. a <code class="docutils literal notranslate"><span class="pre">Column</span></code> or <code class="docutils literal notranslate"><span class="pre">Row</span></code>) and modify it in place once added to one of the content areas.</p>
+<div class="section" id="supported-templates">
+<h3>Supported templates<a class="headerlink" href="#supported-templates" title="Permalink to this headline">¶</a></h3>
+<p>Panel ships with a number of these default themes built on different CSS frameworks:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">MaterialTemplate</span></code>: Built on <a class="reference external" href="https://material.io/develop/web/">Material Components for the web</a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BootstrapTemplate</span></code>: Built on  <a class="reference external" href="https://getbootstrap.com/docs/4.0/getting-started/introduction/">Bootstrap v4</a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">VanillaTemplate</span></code>: Built using pure CSS without relying on any specific framework</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">FastListTemplate</span></code>: Built on the <a class="reference external" href="https://fast.design/">Fast UI</a> framework using a list-like API</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">FastGridTemplate</span></code>: Built on the <a class="reference external" href="https://fast.design/">Fast UI</a> framework using grid-like API</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GoldenTemplate</span></code>: Built on the <a class="reference external" href="https://golden-layout.com/">Golden Layout</a> framework</p></li>
+</ul>
+</div>
+<div class="section" id="using-templates">
+<h3>Using templates<a class="headerlink" href="#using-templates" title="Permalink to this headline">¶</a></h3>
+<p>There are two ways of building an application using these templates either we explicitly construct the template or we change the global template.</p>
+<div class="section" id="explicit-constructor">
+<h4>Explicit constructor<a class="headerlink" href="#explicit-constructor" title="Permalink to this headline">¶</a></h4>
+<p>The explicit way to use templates is to instantiate them directly and adding components to the different parts of the template directly. Let us construct a very simple app containing two plots in the <code class="docutils literal notranslate"><span class="pre">main</span></code> area and two widgets in the sidebar based on the <code class="docutils literal notranslate"><span class="pre">BootstrapTemplate</span></code> class:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bootstrap</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">template</span><span class="o">.</span><span class="n">BootstrapTemplate</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'Bootstrap Template'</span><span class="p">)</span>
+
+<span class="n">xs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+<span class="n">freq</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">widgets</span><span class="o">.</span><span class="n">FloatSlider</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Frequency"</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">phase</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">widgets</span><span class="o">.</span><span class="n">FloatSlider</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Phase"</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+<span class="nd">@pn</span><span class="o">.</span><span class="n">depends</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="n">phase</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">sine</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">phase</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">hv</span><span class="o">.</span><span class="n">Curve</span><span class="p">((</span><span class="n">xs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">xs</span><span class="o">*</span><span class="n">freq</span><span class="o">+</span><span class="n">phase</span><span class="p">)))</span><span class="o">.</span><span class="n">opts</span><span class="p">(</span>
+        <span class="n">responsive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_height</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+
+<span class="nd">@pn</span><span class="o">.</span><span class="n">depends</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="n">phase</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">cosine</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">phase</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">hv</span><span class="o">.</span><span class="n">Curve</span><span class="p">((</span><span class="n">xs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">xs</span><span class="o">*</span><span class="n">freq</span><span class="o">+</span><span class="n">phase</span><span class="p">)))</span><span class="o">.</span><span class="n">opts</span><span class="p">(</span>
+        <span class="n">responsive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_height</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+
+<span class="n">bootstrap</span><span class="o">.</span><span class="n">sidebar</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+<span class="n">bootstrap</span><span class="o">.</span><span class="n">sidebar</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">phase</span><span class="p">)</span>
+
+<span class="n">bootstrap</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+    <span class="n">pn</span><span class="o">.</span><span class="n">Row</span><span class="p">(</span>
+        <span class="n">pn</span><span class="o">.</span><span class="n">Card</span><span class="p">(</span><span class="n">hv</span><span class="o">.</span><span class="n">DynamicMap</span><span class="p">(</span><span class="n">sine</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s1">'Sine'</span><span class="p">),</span>
+        <span class="n">pn</span><span class="o">.</span><span class="n">Card</span><span class="p">(</span><span class="n">hv</span><span class="o">.</span><span class="n">DynamicMap</span><span class="p">(</span><span class="n">cosine</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s1">'Cosine'</span><span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div style="margin: auto 0;">
+<figure>
+<img src="../assets/template.png"/>
+<caption><b>Bootstrap Template</b>: A simple example demonstrating the Bootstrap template</caption>
+</figure>
+<p>A <code class="docutils literal notranslate"><span class="pre">Template</span></code> can be served or displayed just like any other Panel component, i.e. using <code class="docutils literal notranslate"><span class="pre">.servable()</span></code> or <code class="docutils literal notranslate"><span class="pre">.show()</span></code>.</p>
+</div>
+</div>
+<div class="section" id="global-template">
+<h3>Global template<a class="headerlink" href="#global-template" title="Permalink to this headline">¶</a></h3>
+<p>Another, often simpler approach is to set the global template can be set via the <code class="docutils literal notranslate"><span class="pre">pn.extension()</span></code> call, e.g. we can set <code class="docutils literal notranslate"><span class="pre">pn.extension(template='material')</span></code> and even toggle between different themes with <code class="docutils literal notranslate"><span class="pre">pn.extension(template='material',</span> <span class="pre">theme='dark')</span></code>. Once selected we can easily add components to the template using <code class="docutils literal notranslate"><span class="pre">.servable(area=...)</span></code> calls, e.g. the same example looks like this when constructed via the global template</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pn</span><span class="o">.</span><span class="n">extension</span><span class="p">(</span><span class="n">template</span><span class="o">=</span><span class="s1">'bootstrap'</span><span class="p">)</span>
+
+<span class="n">freq</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">widgets</span><span class="o">.</span><span class="n">FloatSlider</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Frequency"</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">servable</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="s1">'sidebar'</span><span class="p">)</span>
+<span class="n">phase</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">widgets</span><span class="o">.</span><span class="n">FloatSlider</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Phase"</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">.</span><span class="n">servable</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="s1">'sidebar'</span><span class="p">)</span>
+
+<span class="nd">@pn</span><span class="o">.</span><span class="n">depends</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="n">phase</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">sine</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">phase</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">hv</span><span class="o">.</span><span class="n">Curve</span><span class="p">((</span><span class="n">xs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">xs</span><span class="o">*</span><span class="n">freq</span><span class="o">+</span><span class="n">phase</span><span class="p">)))</span><span class="o">.</span><span class="n">opts</span><span class="p">(</span>
+        <span class="n">responsive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_height</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+
+<span class="nd">@pn</span><span class="o">.</span><span class="n">depends</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="n">phase</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">cosine</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">phase</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">hv</span><span class="o">.</span><span class="n">Curve</span><span class="p">((</span><span class="n">xs</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">xs</span><span class="o">*</span><span class="n">freq</span><span class="o">+</span><span class="n">phase</span><span class="p">)))</span><span class="o">.</span><span class="n">opts</span><span class="p">(</span>
+        <span class="n">responsive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_height</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+
+<span class="n">pn</span><span class="o">.</span><span class="n">Row</span><span class="p">(</span>
+    <span class="n">pn</span><span class="o">.</span><span class="n">Card</span><span class="p">(</span><span class="n">hv</span><span class="o">.</span><span class="n">DynamicMap</span><span class="p">(</span><span class="n">sine</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s1">'Sine'</span><span class="p">),</span>
+    <span class="n">pn</span><span class="o">.</span><span class="n">Card</span><span class="p">(</span><span class="n">hv</span><span class="o">.</span><span class="n">DynamicMap</span><span class="p">(</span><span class="n">cosine</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s1">'Cosine'</span><span class="p">)</span>
+<span class="p">)</span><span class="o">.</span><span class="n">servable</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="s1">'main'</span><span class="p">)</span> <span class="c1"># Note 'main' is the default</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="theming">
+<h3>Theming<a class="headerlink" href="#theming" title="Permalink to this headline">¶</a></h3>
+<p>Default template classes provide a unified approach to theming, which currently allow specifying custom CSS and the Bokeh <code class="docutils literal notranslate"><span class="pre">Theme</span></code> to apply to the <code class="docutils literal notranslate"><span class="pre">Template</span></code>. The way it is implemented a user declares a generic <code class="docutils literal notranslate"><span class="pre">Theme</span></code> class and the <code class="docutils literal notranslate"><span class="pre">Template</span></code> loads the specific implementation for a particular <code class="docutils literal notranslate"><span class="pre">Template</span></code>.  To make this more concrete, by default a Template uses the <code class="docutils literal notranslate"><span class="pre">DefaultTheme</span></code>, but then uses the <code class="docutils literal notranslate"><span class="pre">find_theme</span></code> method to look up the implementation of that theme for the Template being used:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">panel.template</span> <span class="kn">import</span> <span class="n">DefaultTheme</span>
+
+<span class="n">DefaultTheme</span><span class="o">.</span><span class="n">find_theme</span><span class="p">(</span><span class="n">pn</span><span class="o">.</span><span class="n">template</span><span class="o">.</span><span class="n">MaterialTemplate</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>panel.template.material.MaterialDefaultTheme
+</pre></div>
+</div>
+</div>
+</div>
+<p>To implement your own theme you should therefore declare a generic class for use by the enduser and a specific implementation for all the themes that should be supported, e.g. here is an example of what the definition of a dark theme might look like:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">param</span>
+
+<span class="kn">from</span> <span class="nn">panel.template.theme</span> <span class="kn">import</span> <span class="n">Theme</span>
+<span class="kn">from</span> <span class="nn">bokeh.themes</span> <span class="kn">import</span> <span class="n">DARK_MINIMAL</span>
+
+<span class="k">class</span> <span class="nc">DarkTheme</span><span class="p">(</span><span class="n">Theme</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    The DarkTheme provides a dark color palette</span>
+<span class="sd">    """</span>
+
+    <span class="n">bokeh_theme</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">ClassSelector</span><span class="p">(</span><span class="n">class_</span><span class="o">=</span><span class="p">(</span><span class="n">Theme</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="n">DARK_MINIMAL</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">MaterialDarkTheme</span><span class="p">(</span><span class="n">DarkTheme</span><span class="p">):</span>
+
+    <span class="c1"># css = param.Filename() Here we could declare some custom CSS to apply</span>
+    
+    <span class="c1"># This tells Panel to use this implementation</span>
+    <span class="n">_template</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">template</span><span class="o">.</span><span class="n">MaterialTemplate</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>To apply the theme we now merely have to provide the generic <code class="docutils literal notranslate"><span class="pre">DarkTheme</span></code> class to the Template (we will import the <code class="docutils literal notranslate"><span class="pre">DarkTheme</span></code> that ships with panel here:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">panel.template</span> <span class="kn">import</span> <span class="n">DarkTheme</span>
+
+<span class="n">dark_material</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">template</span><span class="o">.</span><span class="n">MaterialTemplate</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">'Material Template'</span><span class="p">,</span> <span class="n">theme</span><span class="o">=</span><span class="n">DarkTheme</span><span class="p">)</span>
+
+<span class="n">dark_material</span><span class="o">.</span><span class="n">sidebar</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+<span class="n">dark_material</span><span class="o">.</span><span class="n">sidebar</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">phase</span><span class="p">)</span>
+
+<span class="n">dark_material</span><span class="o">.</span><span class="n">main</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+    <span class="n">pn</span><span class="o">.</span><span class="n">Row</span><span class="p">(</span>
+        <span class="n">pn</span><span class="o">.</span><span class="n">Card</span><span class="p">(</span><span class="n">hv</span><span class="o">.</span><span class="n">DynamicMap</span><span class="p">(</span><span class="n">sine</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s1">'Sine'</span><span class="p">),</span>
+        <span class="n">pn</span><span class="o">.</span><span class="n">Card</span><span class="p">(</span><span class="n">hv</span><span class="o">.</span><span class="n">DynamicMap</span><span class="p">(</span><span class="n">cosine</span><span class="p">),</span> <span class="n">title</span><span class="o">=</span><span class="s1">'Cosine'</span><span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div style="margin: auto 0;">
+<figure>
+<img src="../assets/dark_theme.png"/>
+<caption><b>Dark Theme</b>: The MaterialTemplate with a DarkTheme applied</caption>
+</figure></div>
+</div>
+<div class="section" id="using-custom-templates">
+<h2>Using custom templates<a class="headerlink" href="#using-custom-templates" title="Permalink to this headline">¶</a></h2>
+<p>Completely custom templates extend the default jinja2 template in various ways. Before we dive into modifying such a template let us take a look at the default template used by Panel:</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span>{% from macros import embed %}
+
+<span class="cp">&lt;!DOCTYPE html&gt;</span>
+<span class="p">&lt;</span><span class="nt">html</span> <span class="na">lang</span><span class="o">=</span><span class="s">"en"</span><span class="p">&gt;</span>
+{% block head %}
+<span class="p">&lt;</span><span class="nt">head</span><span class="p">&gt;</span>
+    {% block inner_head %}
+    <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">charset</span><span class="o">=</span><span class="s">"utf-8"</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">title</span><span class="p">&gt;</span>{% block title %}{{ title | e if title else "Panel App" }}{% endblock %}<span class="p">&lt;/</span><span class="nt">title</span><span class="p">&gt;</span>
+    {% block preamble %}{% endblock %}
+    {% block resources %}
+        {% block css_resources %}
+        {{ bokeh_css | indent(8) if bokeh_css }}
+        {% endblock %}
+        {% block js_resources %}
+        {{ bokeh_js | indent(8) if bokeh_js }}
+        {% endblock %}
+    {% endblock %}
+    {% block postamble %}{% endblock %}
+    {% endblock %}
+<span class="p">&lt;/</span><span class="nt">head</span><span class="p">&gt;</span>
+{% endblock %}
+{% block body %}
+<span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
+    {% block inner_body %}
+    {% block contents %}
+        {% for doc in docs %}
+        {{ embed(doc) if doc.elementid }}
+        {% for root in doc.roots %}
+            {{ embed(root) | indent(10) }}
+        {% endfor %}
+        {% endfor %}
+    {% endblock %}
+    {{ plot_script | indent(8) }}
+    {% endblock %}
+<span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
+{% endblock %}
+<span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
+</pre></div>
+</div>
+<p>As you may be able to note if you are familiar with jinja2 templating or similar languages, this template can easily be extended by overriding the existing <code class="docutils literal notranslate"><span class="pre">{%</span> <span class="pre">block</span> <span class="pre">...</span> <span class="pre">%}</span></code> definitions. However it is also possible to completely override this default template instead.</p>
+<p>That said it is usually easiest to simply extend an existing template by overriding certain blocks. To begin with we start by using <code class="docutils literal notranslate"><span class="pre">{%</span> <span class="pre">extends</span> <span class="pre">base</span> <span class="pre">%}</span></code> to declare that we are merely extending an existing template rather than defining a whole new one; otherwise we would have to repeat the entire header sections of the full template to ensure all the appropriate resources are loaded.</p>
+<p>In this case we will extend the postamble block of the header to load some additional resources, and the contents block to redefine how the components will be laid out. Specifically, we will load bootstrap.css in the preamble allowing us to use the bootstrap grid system to lay out the output.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">template</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">{</span><span class="si">% e</span><span class="s2">xtends base %}</span>
+
+<span class="s2">&lt;!-- goes in body --&gt;</span>
+<span class="s2">{% block postamble %}</span>
+<span class="s2">&lt;link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"&gt;</span>
+<span class="s2">{</span><span class="si">% e</span><span class="s2">ndblock %}</span>
+
+<span class="s2">&lt;!-- goes in body --&gt;</span>
+<span class="s2">{% block contents %}</span>
+<span class="s2">{{ app_title }}</span>
+<span class="s2">&lt;p&gt;This is a Panel app with a custom template allowing us to compose multiple Panel objects into a single HTML document.&lt;/p&gt;</span>
+<span class="s2">&lt;br&gt;</span>
+<span class="s2">&lt;div class="container"&gt;</span>
+<span class="s2">  &lt;div class="row"&gt;</span>
+<span class="s2">    &lt;div class="col-sm"&gt;</span>
+<span class="s2">      {{ embed(roots.A) }}</span>
+<span class="s2">    &lt;/div&gt;</span>
+<span class="s2">    &lt;div class="col-sm"&gt;</span>
+<span class="s2">      {{ embed(roots.B) }}</span>
+<span class="s2">    &lt;/div&gt;</span>
+<span class="s2">  &lt;/div&gt;</span>
+<span class="s2">&lt;/div&gt;</span>
+<span class="s2">{</span><span class="si">% e</span><span class="s2">ndblock %}</span>
+<span class="s2">"""</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>If you look closely we defined two different roots in the template using the <code class="docutils literal notranslate"><span class="pre">embed</span></code> macro. In order to be able to render the template we now have to first construct the <code class="docutils literal notranslate"><span class="pre">pn.Template</span></code> object with the template HTML and then populate the template with the two required roots, in this case <code class="docutils literal notranslate"><span class="pre">'A'</span></code> and <code class="docutils literal notranslate"><span class="pre">'B'</span></code> by using the <code class="docutils literal notranslate"><span class="pre">add_panel</span></code> method. If either of the roots is not defined the app is invalid and will fail to launch. The app will also fail to launch if any panels are added that are not referenced in the template.</p>
+<p>Additionally we have also declared a new <code class="docutils literal notranslate"><span class="pre">app_title</span></code> variable in the template, which we can populate by using the <code class="docutils literal notranslate"><span class="pre">add_variable</span></code> method:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tmpl</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="n">template</span><span class="p">)</span>
+
+<span class="n">tmpl</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s1">'app_title'</span><span class="p">,</span> <span class="s1">'&lt;h1&gt;Custom Template App&lt;/h1&gt;'</span><span class="p">)</span>
+
+<span class="n">tmpl</span><span class="o">.</span><span class="n">add_panel</span><span class="p">(</span><span class="s1">'A'</span><span class="p">,</span> <span class="n">hv</span><span class="o">.</span><span class="n">Curve</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]))</span>
+<span class="n">tmpl</span><span class="o">.</span><span class="n">add_panel</span><span class="p">(</span><span class="s1">'B'</span><span class="p">,</span> <span class="n">hv</span><span class="o">.</span><span class="n">Curve</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]))</span>
+
+<span class="n">tmpl</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html">
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"/>
+<h1>Custom Template App</h1>
+<p>This is a Panel app with a custom template allowing us to compose multiple Panel objects into a single HTML document.</p>
+<br/>
+<div class="container">
+<div class="row">
+<div class="col-sm">
+<div class="bk-root" data-root-id="1003" id="b3ca0656-a5ca-4801-9267-492b4edfe4ef"></div>
+</div>
+<div class="col-sm">
+<div class="bk-root" data-root-id="1005" id="612bc947-dbf0-4dfa-8a55-723c8ca992aa"></div>
+</div>
+</div>
+</div>
+<script id="1008" type="application/json">
+          {"1e7395cb-5bef-48d1-bbb6-cd387e34ea8e":{"defs":[{"extends":null,"module":null,"name":"ReactiveHTML1","overrides":[],"properties":[]},{"extends":null,"module":null,"name":"FlexBox1","overrides":[],"properties":[{"default":"flex-start","kind":null,"name":"align_content"},{"default":"flex-start","kind":null,"name":"align_items"},{"default":"row","kind":null,"name":"flex_direction"},{"default":"wrap","kind":null,"name":"flex_wrap"},{"default":"flex-start","kind":null,"name":"justify_content"}]},{"extends":null,"module":null,"name":"TemplateActions1","overrides":[],"properties":[{"default":0,"kind":null,"name":"open_modal"},{"default":0,"kind":null,"name":"close_modal"}]},{"extends":null,"module":null,"name":"MaterialTemplateActions1","overrides":[],"properties":[{"default":0,"kind":null,"name":"open_modal"},{"default":0,"kind":null,"name":"close_modal"}]}],"roots":{"references":[{"attributes":{"height":288,"margin":[5,5,5,5],"name":"Matplotlib03121","sizing_mode":"stretch_width","text":"&amp;lt;img src=&amp;quot;data:image/png;base64,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&amp;quot; width=&amp;quot;288px&amp;quot; height=&amp;quot;100%&amp;quot; alt=&amp;quot;&amp;quot;&amp;gt;&amp;lt;/img&amp;gt;","width":288},"id":"1004","type":"panel.models.markup.HTML"},{"attributes":{"children":[{"id":"1006"}],"margin":[0,0,0,0],"name":"B","sizing_mode":"stretch_width"},"id":"1005","type":"Row"},{"attributes":{"children":[{"id":"1004"}],"margin":[0,0,0,0],"name":"A","sizing_mode":"stretch_width"},"id":"1003","type":"Row"},{"attributes":{"client_comm_id":"6d49ae1aa56f47a6ba182a80f527dc80","comm_id":"5fead421611d4222a447428cc175b1b0","name":"comm_manager","plot_id":"1003"},"id":"1007","type":"panel.models.comm_manager.CommManager"},{"attributes":{"height":288,"margin":[5,5,5,5],"name":"Matplotlib03160","sizing_mode":"stretch_width","text":"&amp;lt;img src=&amp;quot;data:image/png;base64,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&amp;quot; width=&amp;quot;288px&amp;quot; height=&amp;quot;100%&amp;quot; alt=&amp;quot;&amp;quot;&amp;gt;&amp;lt;/img&amp;gt;","width":288},"id":"1006","type":"panel.models.markup.HTML"}],"root_ids":["1003","1005","1007"]},"title":"Panel Application","version":"2.3.3"}}
+        </script>
+<script type="text/javascript">
+          (function() {
+            var fn = function() {
+              Bokeh.safely(function() {
+                (function(root) {
+                  function embed_document(root) {
+
+                  var docs_json = document.getElementById('1008').textContent;
+                  var render_items = [{"docid":"1e7395cb-5bef-48d1-bbb6-cd387e34ea8e","root_ids":["1003","1005"],"roots":{"1003":"b3ca0656-a5ca-4801-9267-492b4edfe4ef","1005":"612bc947-dbf0-4dfa-8a55-723c8ca992aa"}}];
+                  root.Bokeh.embed.embed_items(docs_json, render_items);
+
+                  }
+                  if (root.Bokeh !== undefined) {
+                    embed_document(root);
+                  } else {
+                    var attempts = 0;
+                    var timer = setInterval(function(root) {
+                      if (root.Bokeh !== undefined) {
+                        clearInterval(timer);
+                        embed_document(root);
+                      } else {
+                        attempts++;
+                        if (attempts > 100) {
+                          clearInterval(timer);
+                          console.log("Bokeh: ERROR: Unable to run BokehJS code because BokehJS library is missing");
+                        }
+                      }
+                    }, 10, root)
+                  }
+                })(window);
+              });
+            };
+            if (document.readyState != "loading") fn();
+            else document.addEventListener("DOMContentLoaded", fn);
+          })();
+        </script>
+</div></div>
+</div>
+<p>Embedding a different CSS framework (like Bootstrap) in the notebook can have undesirable side-effects so a <code class="docutils literal notranslate"><span class="pre">Template</span></code> may also be given a separate <code class="docutils literal notranslate"><span class="pre">nb_template</span></code> that will be used when rendering inside the notebook:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nb_template</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">{</span><span class="si">% e</span><span class="s2">xtends base %}</span>
+
+<span class="s2">{% block contents %}</span>
+<span class="s2">{{ app_title }}</span>
+<span class="s2">&lt;p&gt;This is a Panel app with a custom template allowing us to compose multiple Panel objects into a single HTML document.&lt;/p&gt;</span>
+<span class="s2">&lt;br&gt;</span>
+<span class="s2">&lt;div style="display:table; width: 100%"&gt;</span>
+<span class="s2">  &lt;div style="display:table-cell; margin: auto"&gt;</span>
+<span class="s2">    {{ embed(roots.A) }}</span>
+<span class="s2">  &lt;/div&gt;</span>
+<span class="s2">  &lt;div style="display:table-cell; margin: auto"&gt;</span>
+<span class="s2">    {{ embed(roots.B) }}</span>
+<span class="s2">  &lt;/div&gt;</span>
+<span class="s2">&lt;/div&gt;</span>
+<span class="s2">{</span><span class="si">% e</span><span class="s2">ndblock %}</span>
+<span class="s2">"""</span>
+
+<span class="n">tmpl</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">nb_template</span><span class="o">=</span><span class="n">nb_template</span><span class="p">)</span>
+
+<span class="n">tmpl</span><span class="o">.</span><span class="n">add_variable</span><span class="p">(</span><span class="s1">'app_title'</span><span class="p">,</span> <span class="s1">'&lt;h1&gt;Custom Template App&lt;/h1&gt;'</span><span class="p">)</span>
+
+<span class="n">tmpl</span><span class="o">.</span><span class="n">add_panel</span><span class="p">(</span><span class="s1">'A'</span><span class="p">,</span> <span class="n">hv</span><span class="o">.</span><span class="n">Curve</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]))</span>
+<span class="n">tmpl</span><span class="o">.</span><span class="n">add_panel</span><span class="p">(</span><span class="s1">'B'</span><span class="p">,</span> <span class="n">hv</span><span class="o">.</span><span class="n">Curve</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]))</span>
+
+<span class="n">tmpl</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html">
+<h1>Custom Template App</h1>
+<p>This is a Panel app with a custom template allowing us to compose multiple Panel objects into a single HTML document.</p>
+<br/>
+<div style="display:table; width: 100%">
+<div style="display:table-cell; margin: auto">
+<div class="bk-root" data-root-id="1010" id="e1e2ebd3-19c3-458a-8b4d-f8654349c542"></div>
+</div>
+<div style="display:table-cell; margin: auto">
+<div class="bk-root" data-root-id="1012" id="9f3fc7ee-b8a0-4f64-92fd-f4be3be0ea25"></div>
+</div>
+</div>
+<script id="1015" type="application/json">
+          {"4de16a66-8857-48d7-bfb8-8bd5fc8de6e5":{"defs":[{"extends":null,"module":null,"name":"ReactiveHTML1","overrides":[],"properties":[]},{"extends":null,"module":null,"name":"FlexBox1","overrides":[],"properties":[{"default":"flex-start","kind":null,"name":"align_content"},{"default":"flex-start","kind":null,"name":"align_items"},{"default":"row","kind":null,"name":"flex_direction"},{"default":"wrap","kind":null,"name":"flex_wrap"},{"default":"flex-start","kind":null,"name":"justify_content"}]},{"extends":null,"module":null,"name":"TemplateActions1","overrides":[],"properties":[{"default":0,"kind":null,"name":"open_modal"},{"default":0,"kind":null,"name":"close_modal"}]},{"extends":null,"module":null,"name":"MaterialTemplateActions1","overrides":[],"properties":[{"default":0,"kind":null,"name":"open_modal"},{"default":0,"kind":null,"name":"close_modal"}]}],"roots":{"references":[{"attributes":{"children":[{"id":"1013"}],"margin":[0,0,0,0],"name":"B","sizing_mode":"stretch_width"},"id":"1012","type":"Row"},{"attributes":{"height":288,"margin":[5,5,5,5],"name":"Matplotlib03266","sizing_mode":"stretch_width","text":"&amp;lt;img src=&amp;quot;data:image/png;base64,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&amp;quot; width=&amp;quot;288px&amp;quot; height=&amp;quot;100%&amp;quot; alt=&amp;quot;&amp;quot;&amp;gt;&amp;lt;/img&amp;gt;","width":288},"id":"1013","type":"panel.models.markup.HTML"},{"attributes":{"client_comm_id":"02510fc120e441ada310102862e80e10","comm_id":"a4b850020a51454d870352efd6665810","name":"comm_manager","plot_id":"1010"},"id":"1014","type":"panel.models.comm_manager.CommManager"},{"attributes":{"children":[{"id":"1011"}],"margin":[0,0,0,0],"name":"A","sizing_mode":"stretch_width"},"id":"1010","type":"Row"},{"attributes":{"height":288,"margin":[5,5,5,5],"name":"Matplotlib03227","sizing_mode":"stretch_width","text":"&amp;lt;img src=&amp;quot;data:image/png;base64,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&amp;quot; width=&amp;quot;288px&amp;quot; height=&amp;quot;100%&amp;quot; alt=&amp;quot;&amp;quot;&amp;gt;&amp;lt;/img&amp;gt;","width":288},"id":"1011","type":"panel.models.markup.HTML"}],"root_ids":["1010","1012","1014"]},"title":"Panel Application","version":"2.3.3"}}
+        </script>
+<script type="text/javascript">
+          (function() {
+            var fn = function() {
+              Bokeh.safely(function() {
+                (function(root) {
+                  function embed_document(root) {
+
+                  var docs_json = document.getElementById('1015').textContent;
+                  var render_items = [{"docid":"4de16a66-8857-48d7-bfb8-8bd5fc8de6e5","root_ids":["1010","1012"],"roots":{"1010":"e1e2ebd3-19c3-458a-8b4d-f8654349c542","1012":"9f3fc7ee-b8a0-4f64-92fd-f4be3be0ea25"}}];
+                  root.Bokeh.embed.embed_items(docs_json, render_items);
+
+                  }
+                  if (root.Bokeh !== undefined) {
+                    embed_document(root);
+                  } else {
+                    var attempts = 0;
+                    var timer = setInterval(function(root) {
+                      if (root.Bokeh !== undefined) {
+                        clearInterval(timer);
+                        embed_document(root);
+                      } else {
+                        attempts++;
+                        if (attempts > 100) {
+                          clearInterval(timer);
+                          console.log("Bokeh: ERROR: Unable to run BokehJS code because BokehJS library is missing");
+                        }
+                      }
+                    }, 10, root)
+                  }
+                })(window);
+              });
+            };
+            if (document.readyState != "loading") fn();
+            else document.addEventListener("DOMContentLoaded", fn);
+          })();
+        </script>
+</div></div>
+</div>
+<div class="section" id="loading-template-from-file">
+<h3>Loading template from file<a class="headerlink" href="#loading-template-from-file" title="Permalink to this headline">¶</a></h3>
+<p>If the template is larger it is often cleaner to define it in a separate file. You can either read it in as a string, or use the official loading mechanism available for Jinja2 templates by defining a <code class="docutils literal notranslate"><span class="pre">Environment</span></code> along with a <code class="docutils literal notranslate"><span class="pre">loader</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">jinja2</span> <span class="kn">import</span> <span class="n">Environment</span><span class="p">,</span> <span class="n">FileSystemLoader</span>
+
+<span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">FileSystemLoader</span><span class="p">(</span><span class="s1">'.'</span><span class="p">))</span>
+<span class="n">jinja_template</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_template</span><span class="p">(</span><span class="s1">'sample_template.html'</span><span class="p">)</span>
+
+<span class="n">tmpl</span> <span class="o">=</span> <span class="n">pn</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="n">jinja_template</span><span class="p">)</span>
+
+<span class="n">tmpl</span><span class="o">.</span><span class="n">add_panel</span><span class="p">(</span><span class="s1">'A'</span><span class="p">,</span> <span class="n">hv</span><span class="o">.</span><span class="n">Curve</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]))</span>
+<span class="n">tmpl</span><span class="o">.</span><span class="n">add_panel</span><span class="p">(</span><span class="s1">'B'</span><span class="p">,</span> <span class="n">hv</span><span class="o">.</span><span class="n">Curve</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]))</span>
+<span class="n">tmpl</span><span class="o">.</span><span class="n">servable</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_html">
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"/>
+<h1>Custom Template App</h1>
+<p>This is a Panel app with a custom template allowing us to compose multiple Panel objects into a single HTML document.</p>
+<br/>
+<div class="container">
+<div class="row">
+<div class="col-sm">
+<div class="bk-root" data-root-id="1017" id="d12534d8-2e8d-4cf6-bd08-2c95c2935f7f"></div>
+</div>
+<div class="col-sm">
+<div class="bk-root" data-root-id="1019" id="b97d56bc-3d2d-4e5b-8c35-f1ec21d8e039"></div>
+</div>
+</div>
+</div>
+<script id="1022" type="application/json">
+          {"be60350b-049d-4aae-aac1-55f57163b4b7":{"defs":[{"extends":null,"module":null,"name":"ReactiveHTML1","overrides":[],"properties":[]},{"extends":null,"module":null,"name":"FlexBox1","overrides":[],"properties":[{"default":"flex-start","kind":null,"name":"align_content"},{"default":"flex-start","kind":null,"name":"align_items"},{"default":"row","kind":null,"name":"flex_direction"},{"default":"wrap","kind":null,"name":"flex_wrap"},{"default":"flex-start","kind":null,"name":"justify_content"}]},{"extends":null,"module":null,"name":"TemplateActions1","overrides":[],"properties":[{"default":0,"kind":null,"name":"open_modal"},{"default":0,"kind":null,"name":"close_modal"}]},{"extends":null,"module":null,"name":"MaterialTemplateActions1","overrides":[],"properties":[{"default":0,"kind":null,"name":"open_modal"},{"default":0,"kind":null,"name":"close_modal"}]}],"roots":{"references":[{"attributes":{"children":[{"id":"1020"}],"margin":[0,0,0,0],"name":"B","sizing_mode":"stretch_width"},"id":"1019","type":"Row"},{"attributes":{"children":[{"id":"1018"}],"margin":[0,0,0,0],"name":"A","sizing_mode":"stretch_width"},"id":"1017","type":"Row"},{"attributes":{"height":288,"margin":[5,5,5,5],"name":"Matplotlib03333","sizing_mode":"stretch_width","text":"&amp;lt;img src=&amp;quot;data:image/png;base64,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&amp;quot; width=&amp;quot;288px&amp;quot; height=&amp;quot;100%&amp;quot; alt=&amp;quot;&amp;quot;&amp;gt;&amp;lt;/img&amp;gt;","width":288},"id":"1018","type":"panel.models.markup.HTML"},{"attributes":{"height":288,"margin":[5,5,5,5],"name":"Matplotlib03372","sizing_mode":"stretch_width","text":"&amp;lt;img src=&amp;quot;data:image/png;base64,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&amp;quot; width=&amp;quot;288px&amp;quot; height=&amp;quot;100%&amp;quot; alt=&amp;quot;&amp;quot;&amp;gt;&amp;lt;/img&amp;gt;","width":288},"id":"1020","type":"panel.models.markup.HTML"},{"attributes":{"client_comm_id":"41d4d584997842eebd1527514323c93a","comm_id":"1b688b62af094a26a0a474d406d25a0c","name":"comm_manager","plot_id":"1017"},"id":"1021","type":"panel.models.comm_manager.CommManager"}],"root_ids":["1017","1019","1021"]},"title":"Panel Application","version":"2.3.3"}}
+        </script>
+<script type="text/javascript">
+          (function() {
+            var fn = function() {
+              Bokeh.safely(function() {
+                (function(root) {
+                  function embed_document(root) {
+
+                  var docs_json = document.getElementById('1022').textContent;
+                  var render_items = [{"docid":"be60350b-049d-4aae-aac1-55f57163b4b7","root_ids":["1017","1019"],"roots":{"1017":"d12534d8-2e8d-4cf6-bd08-2c95c2935f7f","1019":"b97d56bc-3d2d-4e5b-8c35-f1ec21d8e039"}}];
+                  root.Bokeh.embed.embed_items(docs_json, render_items);
+
+                  }
+                  if (root.Bokeh !== undefined) {
+                    embed_document(root);
+                  } else {
+                    var attempts = 0;
+                    var timer = setInterval(function(root) {
+                      if (root.Bokeh !== undefined) {
+                        clearInterval(timer);
+                        embed_document(root);
+                      } else {
+                        attempts++;
+                        if (attempts > 100) {
+                          clearInterval(timer);
+                          console.log("Bokeh: ERROR: Unable to run BokehJS code because BokehJS library is missing");
+                        }
+                      }
+                    }, 10, root)
+                  }
+                })(window);
+              });
+            };
+            if (document.readyState != "loading") fn();
+            else document.addEventListener("DOMContentLoaded", fn);
+          })();
+        </script>
+</div></div>
+</div>
+</div>
+</div>
+<div id="scroller-right">This web page was generated from a Jupyter notebook and not all interactivity will work on this website. <a href="https://raw.githubusercontent.com/holoviz/panel/master/examples/user_guide/Templates.ipynb">Right click to download and run locally</a> for full Python-backed interactivity.</div><hr class="docutils"/>
+<p><a class="reference external" href="https://raw.githubusercontent.com/holoviz/panel/master/examples/user_guide/Templates.ipynb">Right click to download this notebook from GitHub.</a></p>
+</div>
+</div>
+<div class="prev-next-bottom">
+<a class="left-prev" href="Pipelines.html" id="prev-link" title="previous page">Pipelines</a>
+<a class="right-next" href="Server_Deployment.html" id="next-link" title="next page">Server Deployment</a>
+</div>
+</div></div></main>
+</div>
+</div>
+<script src="../_static/js/index.1c5a1a01449ed65a7b51.js"></script>
+<footer class="footer mt-5 mt-md-0">
+<div class="container">
+<div class="footer-item">
+<p class="copyright">
+    © Copyright 2019-2021 Panel contributors.<br>
+</br></p>
+</div>
+<div class="footer-item">
+<p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.5.3.<br>
+</br></p>
+</div>
+</div>
+</footer>
+</body>
+</html>
