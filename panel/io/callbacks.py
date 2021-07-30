@@ -5,6 +5,8 @@ on a running bokeh server.
 import time
 import param
 
+from functools import partial, wraps
+
 from ..util import edit_readonly
 from .state import state
 
@@ -99,7 +101,7 @@ class PeriodicCallback(param.Parameterized):
             finally:
                 self._updating = False
         self._start_time = time.time()
-        if state.curdoc and state.curdoc.session_context:
+        if state.curdoc:
             self._doc = state.curdoc
             self._cb = self._doc.add_periodic_callback(self._periodic_callback, self.period)
         else:
@@ -124,3 +126,51 @@ class PeriodicCallback(param.Parameterized):
         else:
             self._cb.stop()
         self._cb = None
+
+
+def _throttle(*args, timeout=100, policy='debounce'):
+    """
+    Decorator which allows throttling a callback function.
+
+    Parameters
+    ----------
+    timeout: int
+      Debounce timeout in milliseconds
+    policy: str
+      Allows switching between throttling and debouncing behavior
+    """
+    state = {}
+    def wrapper(func):
+        def execute():
+            if 'expiry' not in state:
+                return
+            expiry = state['expiry']
+            now = time.monotonic()
+            if now < expiry:
+                period = int((expiry-now)*1000)
+                PeriodicCallback(
+                    callback=execute, period=period, count=1
+                ).start()
+                return
+            func(*state['args'], **state['kwargs'])
+            state.clear()
+        @wraps(func)
+        def inner(*args, **kwargs):
+            expiry = state.get('expiry')
+            now = time.monotonic()
+            state['args'] = args
+            state['kwargs'] = kwargs
+            if policy == 'debounce':
+                state['expiry'] = now + (timeout/1000.)
+            if expiry is None:
+                PeriodicCallback(callback=execute, period=timeout, count=1).start()
+                if policy == 'throttle':
+                    state['expiry'] = now + (timeout/1000.)
+        return inner
+    if args:
+        return wrapper(*args)
+    return wrapper
+
+
+throttle = partial(_throttle, policy='throttle')
+debounce = partial(_throttle, policy='debounce')
