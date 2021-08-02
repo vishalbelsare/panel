@@ -285,7 +285,10 @@ class Syncable(Renderable):
             state._thread_id = thread_id
             events = self._events
             self._events = {}
-            self._process_events(events)
+            if state._thread_pool:
+                state._thread_pool.submit(self._process_events, events)
+            else:
+                self._process_events(events)
         finally:
             state.curdoc = None
             state._thread_id = None
@@ -297,8 +300,8 @@ class Syncable(Renderable):
             self._changing[ref].remove(attr)
             return
 
-        with hold(doc, comm=comm):
-            self._process_events({attr: new})
+        self._events.update({attr: new})
+        self._change_event(doc)
 
     def _server_change(self, doc, ref, subpath, attr, old, new):
         if subpath:
