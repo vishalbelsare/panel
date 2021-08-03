@@ -275,7 +275,10 @@ class Syncable(Renderable):
 
     @gen.coroutine
     def _change_coroutine(self, doc=None):
-        self._change_event(doc)
+        if state._thread_pool:
+            state._thread_pool.submit(self._change_event, doc)
+        else:
+            self._change_event(doc)
 
     def _change_event(self, doc=None):
         try:
@@ -285,13 +288,14 @@ class Syncable(Renderable):
             state._thread_id = thread_id
             events = self._events
             self._events = {}
-            if state._thread_pool:
-                state._thread_pool.submit(self._process_events, events)
-            else:
-                self._process_events(events)
+            self._process_events(events)
         finally:
             state.curdoc = None
             state._thread_id = None
+
+    def _schedule_change(self, doc, comm):
+        with hold(doc, comm=comm):
+            self._change_event(doc)
 
     def _comm_change(self, doc, ref, comm, subpath, attr, old, new):
         if subpath:
@@ -301,7 +305,10 @@ class Syncable(Renderable):
             return
 
         self._events.update({attr: new})
-        self._change_event(doc)
+        if state._thread_pool:
+            state._thread_pool.submit(self._schedule_change, doc, comm)
+        else:
+            self._schedule_change(doc, comm)
 
     def _server_change(self, doc, ref, subpath, attr, old, new):
         if subpath:
