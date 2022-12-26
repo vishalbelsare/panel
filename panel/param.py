@@ -2,41 +2,56 @@
 Defines the Param pane which converts Parameterized classes into a
 set of widgets.
 """
-import os
-import sys
-import json
-import types
+from __future__ import annotations
+
 import inspect
 import itertools
+import json
+import os
+import sys
+import types
 
 from collections import OrderedDict, defaultdict, namedtuple
+from collections.abc import Callable
 from contextlib import contextmanager
-from six import string_types
+from functools import partial
+from typing import (
+    TYPE_CHECKING, Any, ClassVar, List, Mapping, Optional, Type,
+)
 
 import param
 
+from packaging.version import Version
 from param.parameterized import classlist, discard_events
 
+from .config import config
 from .io import init_doc, state
-from .layout import Column, Panel, Row, Spacer, Tabs
-from .pane.base import PaneBase, ReplacementPane
-from .util import (
-    abbreviated_repr, full_groupby, get_method_owner, is_parameterized,
-    param_name, recursive_parameterized
+from .layout import (
+    Column, Panel, Row, Spacer, Tabs,
 )
+from .pane.base import PaneBase, ReplacementPane
 from .reactive import Reactive
+from .util import (
+    abbreviated_repr, bokeh_version, classproperty, full_groupby, fullpath,
+    get_method_owner, is_parameterized, param_name, recursive_parameterized,
+)
 from .viewable import Layoutable, Viewable
 from .widgets import (
-    Button, Checkbox, ColorPicker, DataFrame, DatePicker,
-    DatetimeInput, DateRangeSlider, DiscreteSlider, FileSelector,
-    FloatSlider, IntInput, IntSlider, LiteralInput, MultiSelect,
-    RangeSlider, Select, FloatInput, StaticText, TextInput, Toggle,
-    Widget
+    ArrayInput, Button, Checkbox, ColorPicker, DataFrame, DatePicker,
+    DateRangeSlider, DatetimeInput, DatetimeRangeSlider, DiscreteSlider,
+    FileSelector, FloatInput, FloatSlider, IntInput, IntSlider, LiteralInput,
+    MultiSelect, RangeSlider, Select, StaticText, Tabulator, TextInput, Toggle,
+    Widget,
 )
 from .widgets.button import _ButtonBase
 
+if TYPE_CHECKING:
+    from bokeh.document import Document
+    from bokeh.model import Model
+    from pyviz_comms import Comm
 
-def SingleFileSelector(pobj):
+
+def SingleFileSelector(pobj: param.Parameter) -> Type[Widget]:
     """
     Determines whether to use a TextInput or Select widget for FileSelector
     """
@@ -46,7 +61,7 @@ def SingleFileSelector(pobj):
         return TextInput
 
 
-def LiteralInputTyped(pobj):
+def LiteralInputTyped(pobj: param.Parameter) -> Type[Widget]:
     if isinstance(pobj, param.Tuple):
         return type(str('TupleInput'), (LiteralInput,), {'type': tuple})
     elif isinstance(pobj, param.Number):
@@ -56,6 +71,13 @@ def LiteralInputTyped(pobj):
     elif isinstance(pobj, param.List):
         return type(str('ListInput'), (LiteralInput,), {'type': list})
     return LiteralInput
+
+
+def DataFrameWidget(pobj: param.DataFrame) -> Type[Widget]:
+    if 'panel.models.tabulator' in sys.modules:
+        return Tabulator
+    else:
+        return DataFrame
 
 
 @contextmanager
@@ -136,6 +158,12 @@ class Param(PaneBase):
     show_name = param.Boolean(default=True, doc="""
         Whether to show the parameterized object's name""")
 
+    sort = param.ClassSelector(default=False, class_=(bool, Callable), doc="""
+        If True the widgets will be sorted alphabetically by label.
+        If a callable is provided it will be used to sort the Parameters,
+        for example lambda x: x[1].label[::-1] will sort by the reversed
+        label.""")
+
     width = param.Integer(default=300, allow_None=True, bounds=(0, None), doc="""
         Width of widgetbox the parameter widgets are displayed in.""")
 
@@ -143,19 +171,16 @@ class Param(PaneBase):
         Dictionary of widget overrides, mapping from parameter name
         to widget class.""")
 
-    priority = 0.1
-
-    _unpack = True
-
-    _mapping = {
+    mapping: ClassVar[Mapping[param.Parameter, Widget | Callable[[param.Parameter], Widget]]] = {
         param.Action:            Button,
+        param.Array:             ArrayInput,
         param.Boolean:           Checkbox,
         param.CalendarDate:      DatePicker,
         param.Color:             ColorPicker,
         param.Date:              DatetimeInput,
         param.DateRange:         DateRangeSlider,
         param.CalendarDateRange: DateRangeSlider,
-        param.DataFrame:         DataFrame,
+        param.DataFrame:         DataFrameWidget,
         param.Dict:              LiteralInputTyped,
         param.FileSelector:      SingleFileSelector,
         param.Filename:          TextInput,
@@ -173,9 +198,16 @@ class Param(PaneBase):
     }
 
     if hasattr(param, 'Event'):
-        _mapping[param.Event] = Button
+        mapping[param.Event] = Button
 
-    _rerender_params = []
+    if bokeh_version >= Version('2.4.3'):
+        mapping[param.DateRange] = DatetimeRangeSlider
+
+    priority: ClassVar[float | bool | None] = 0.1
+
+    _unpack: ClassVar[bool] = True
+
+    _rerender_params: ClassVar[List[str]] = []
 
     def __init__(self, object=None, **params):
         if isinstance(object, param.Parameter):
@@ -220,6 +252,14 @@ class Param(PaneBase):
             'hide_constant'])
         self._update_widgets()
 
+    @classproperty
+    def _mapping(cls):
+        cls.param.warning(
+            "Param._mapping is now deprecated in favor of the public "
+            "Param.mapping attribute. Update your code accordingly."
+        )
+        return cls.mapping
+
     def __repr__(self, depth=0):
         cls = type(self).__name__
         obj_cls = type(self.object).__name__
@@ -229,7 +269,7 @@ class Param(PaneBase):
         for p, v in sorted(self.param.values().items()):
             if v is self.param[p].default: continue
             elif v is None: continue
-            elif isinstance(v, string_types) and v == '': continue
+            elif isinstance(v, str) and v == '': continue
             elif p == 'object' or (p == 'name' and (v.startswith(obj_cls) or v.startswith(cls))): continue
             elif p == 'parameters' and v == parameters: continue
             try:
@@ -257,7 +297,7 @@ class Param(PaneBase):
                     # Setting object will trigger this method a second time
                     self.object = event.new.cls if event.new.self is None else event.new.self
                     return
-                
+
                 if self._explicit_parameters:
                     parameters = self.parameters
                 elif event.new is None:
@@ -349,7 +389,7 @@ class Param(PaneBase):
                                  **kwargs)
                     layout[layout.objects.index(existing[0])] = pane
                 else:
-                    layout.pop(existing[0])
+                    layout.remove(existing[0])
 
             watchers = [selector.param.watch(update_pane, 'value')]
             if toggle:
@@ -392,21 +432,21 @@ class Param(PaneBase):
             kw['visible'] = not p_obj.constant
 
         value = getattr(self.object, p_name)
-        if value is not None:
+        allow_None = p_obj.allow_None or False
+        if isinstance(widget_class, type) and issubclass(widget_class, Widget):
+            allow_None &= widget_class.param.value.allow_None
+        if value is not None or allow_None:
             kw['value'] = value
-
-        # Update kwargs
-        kw.update(kw_widget)
 
         if hasattr(p_obj, 'get_range'):
             options = p_obj.get_range()
-            if not options and value is not None:
-                options = [value]
             # This applies to widgets whose `options` Parameter is a List type,
             # such as AutoCompleteInput.
             if ('options' in widget_class.param
                 and isinstance(widget_class.param['options'], param.List)):
                 options = list(options.values())
+            if not options and value is not None:
+                options = [value]
             kw['options'] = options
         if hasattr(p_obj, 'get_soft_bounds'):
             bounds = p_obj.get_soft_bounds()
@@ -414,11 +454,11 @@ class Param(PaneBase):
                 kw['start'] = bounds[0]
             if bounds[1] is not None:
                 kw['end'] = bounds[1]
-            if ('start' not in kw or 'end' not in kw):
-                # Do not change widget class if _mapping was overridden
+            if (('start' not in kw or 'end' not in kw) and
+                not isinstance(p_obj, (param.Date, param.CalendarDate))):
+                # Do not change widget class if mapping was overridden
                 if not widget_class_overridden:
-                    if (isinstance(p_obj, param.Number) and
-                        not isinstance(p_obj, (param.Date, param.CalendarDate))):
+                    if isinstance(p_obj, param.Number):
                         widget_class = FloatInput
                         if isinstance(p_obj, param.Integer):
                             widget_class = IntInput
@@ -426,6 +466,13 @@ class Param(PaneBase):
                         widget_class = LiteralInput
             if hasattr(widget_class, 'step') and getattr(p_obj, 'step', None):
                 kw['step'] = p_obj.step
+            if hasattr(widget_class, 'fixed_start') and getattr(p_obj, 'bounds', None):
+                kw['fixed_start'] = p_obj.bounds[0]
+            if hasattr(widget_class, 'fixed_end') and getattr(p_obj, 'bounds', None):
+                kw['fixed_end'] = p_obj.bounds[1]
+
+        # Update kwargs
+        kw.update(kw_widget)
 
         kwargs = {k: v for k, v in kw.items() if k in widget_class.param}
 
@@ -458,6 +505,8 @@ class Param(PaneBase):
             def action(change):
                 value(self.object)
             watcher = widget.param.watch(action, 'clicks')
+        elif kw_widget.get('onkeyup', False) and hasattr(widget, 'value_input'):
+            watcher = widget.param.watch(link_widget, 'value_input')
         elif kw_widget.get('throttled', False) and hasattr(widget, 'value_throttled'):
             watcher = widget.param.watch(link_widget, 'value_throttled')
         else:
@@ -480,7 +529,7 @@ class Param(PaneBase):
                     self._rerender()
                 elif (change.new < self.display_threshold and
                       widget in self._widget_box.objects):
-                    self._widget_box.pop(widget)
+                    self._widget_box.remove(widget)
                 elif change.new >= self.display_threshold:
                     self._rerender()
                 return
@@ -571,14 +620,21 @@ class Param(PaneBase):
     def _ordered_params(self):
         params = [(p, pobj) for p, pobj in self.object.param.objects('existing').items()
                   if p in self.parameters or p == 'name']
+        if self.sort:
+            if callable(self.sort):
+                key_fn = self.sort
+            else:
+                key_fn = lambda x: x[1].label
+            sorted_params = sorted(params, key=key_fn)
+            sorted_params = [el[0] for el in sorted_params if (el[0] != 'name' or el[0] in self.parameters)]
+            return sorted_params
+
         key_fn = lambda x: x[1].precedence if x[1].precedence is not None else self.default_precedence
         sorted_precedence = sorted(params, key=key_fn)
         filtered = [(k, p) for k, p in sorted_precedence]
         groups = itertools.groupby(filtered, key=key_fn)
         # Params preserve definition order in Python 3.6+
-        dict_ordered_py3 = (sys.version_info.major == 3 and sys.version_info.minor >= 6)
-        dict_ordered = dict_ordered_py3 or (sys.version_info.major > 3)
-        ordered_groups = [list(grp) if dict_ordered else sorted(grp) for (_, grp) in groups]
+        ordered_groups = [list(grp) for (_, grp) in groups]
         ordered_params = [el[0] for group in ordered_groups for el in group
                           if (el[0] != 'name' or el[0] in self.parameters)]
         return ordered_params
@@ -607,7 +663,7 @@ class Param(PaneBase):
                 watchers.append(w)
         self._widgets[p_name] = self.widget(p_name)
         self._rerender()
-    
+
     def _get_widgets(self):
         """Return name,widget boxes for all parameters (i.e., a property sheet)"""
         # Format name specially
@@ -620,12 +676,15 @@ class Param(PaneBase):
         widgets += [(pname, self.widget(pname)) for pname in self._ordered_params]
         return OrderedDict(widgets)
 
-    def _get_model(self, doc, root=None, parent=None, comm=None):
+    def _get_model(
+        self, doc: Document, root: Optional[Model] = None,
+        parent: Optional[Model] = None, comm: Optional[Comm] = None
+    ) -> Model:
         model = self.layout._get_model(doc, root, parent, comm)
         self._models[root.ref['id']] = (model, parent)
         return model
 
-    def _cleanup(self, root):
+    def _cleanup(self, root: Model | None = None) -> None:
         self.layout._cleanup(root)
         super()._cleanup(root)
 
@@ -634,7 +693,7 @@ class Param(PaneBase):
     #----------------------------------------------------------------
 
     @classmethod
-    def applies(cls, obj):
+    def applies(cls, obj: Any) -> float | bool | None:
         return (is_parameterized(obj) or
                 isinstance(obj, param.parameterized.Parameters) or
                 (isinstance(obj, param.Parameter) and obj.owner is not None))
@@ -643,10 +702,12 @@ class Param(PaneBase):
     def widget_type(cls, pobj):
         ptype = type(pobj)
         for t in classlist(ptype)[::-1]:
-            if t in cls._mapping:
-                if isinstance(cls._mapping[t], types.FunctionType):
-                    return cls._mapping[t](pobj)
-                return cls._mapping[t]
+            if t not in cls.mapping:
+                continue
+            wtype = cls.mapping[t]
+            if isinstance(wtype, types.FunctionType):
+                return wtype(pobj)
+            return wtype
 
     def select(self, selector=None):
         """
@@ -665,7 +726,10 @@ class Param(PaneBase):
         """
         return super().select(selector) + self.layout.select(selector)
 
-    def get_root(self, doc=None, comm=None, preprocess=True):
+    def get_root(
+        self, doc: Optional[Document] = None, comm: Optional[Comm] = None,
+        preprocess: bool = True
+    ) -> Model:
         """
         Returns the root model and applies pre-processing hooks
 
@@ -700,6 +764,10 @@ class ParamMethod(ReplacementPane):
     return any object which itself can be rendered as a Pane.
     """
 
+    defer_load = param.Boolean(default=None, doc="""
+        Whether to defer load until after the page is rendered.
+        Can be set as parameter or by setting panel.config.defer_load.""")
+
     lazy = param.Boolean(default=False, doc="""
         Whether to lazily evaluate the contents of the object
         only when it is required for rendering.""")
@@ -708,12 +776,18 @@ class ParamMethod(ReplacementPane):
         Whether to show loading indicator while pane is updating.""")
 
     def __init__(self, object=None, **params):
+        if (
+            self.param.defer_load.default is None and
+            'defer_load' not in params and config.defer_load
+        ):
+            params['defer_load'] = config.defer_load
         super().__init__(object, **params)
-        self._evaled = not self.lazy
+        self._evaled = not (self.lazy or self.defer_load)
         self._link_object_params()
         if object is not None:
             self._validate_object()
-            self._replace_pane(not self.lazy)
+            if not self.defer_load:
+                self._replace_pane()
 
     @param.depends('object', watch=True)
     def _validate_object(self):
@@ -721,17 +795,16 @@ class ParamMethod(ReplacementPane):
         if not dependencies or not dependencies.get('watch'):
             return
         fn_type = 'method' if type(self) is ParamMethod else 'function'
-        self.param.warning(f"The {fn_type} supplied for Panel to display "
-                           "was declared with `watch=True`, which will "
-                           f"cause the {fn_type} to be called twice for "
-                           "any change in a dependent Parameter. "
-                           "`watch` should be False when Panel is "
-                           "responsible for displaying the result "
-                           f"of the {fn_type} call, while `watch=True` "
-                           f"should be reserved for {fn_type}s that work "
-                           "via side-effects, e.g. by modifying internal  "
-                           "state of a class or global state in an "
-                           "application's namespace.")
+        self.param.warning(
+            f"The {fn_type} supplied for Panel to display was declared "
+            f"with `watch=True`, which will cause the {fn_type} to be "
+            "called twice for any change in a dependent Parameter. "
+            "`watch` should be False when Panel is responsible for "
+            f"displaying the result of the {fn_type} call, while "
+            f"`watch=True` should be reserved for {fn_type}s that work "
+            "via side-effects, e.g. by modifying internal state of a "
+            "class or global state in an application's namespace."
+        )
 
     #----------------------------------------------------------------
     # Callback API
@@ -748,18 +821,31 @@ class ParamMethod(ReplacementPane):
                 kwargs = {n: getattr(dep.owner, dep.name) for n, dep in kw_deps.items()}
         return function(*args, **kwargs)
 
+    async def _eval_async(self, awaitable):
+        try:
+            new_object = await awaitable
+            self._update_inner(new_object)
+        finally:
+            self._inner_layout.loading = False
+
     def _replace_pane(self, *args, force=False):
-        self._evaled = bool(self._models) or force or not self.lazy
-        if self._evaled:
-            self._inner_layout.loading = self.loading_indicator
-            try:
-                if self.object is None:
-                    new_object = Spacer()
-                else:
-                    new_object = self.eval(self.object)
-                self._update_inner(new_object)
-            finally:
-                self._inner_layout.loading = False
+        deferred = self.defer_load and not state.loaded
+        if not self._inner_layout.loading:
+            self._inner_layout.loading = bool(self.loading_indicator or deferred)
+        self._evaled |= force or not (self.lazy or deferred)
+        if not self._evaled:
+            return
+        try:
+            if self.object is None:
+                new_object = Spacer()
+            else:
+                new_object = self.eval(self.object)
+            if inspect.isawaitable(new_object):
+                param.parameterized.async_executor(partial(self._eval_async, new_object))
+                return
+            self._update_inner(new_object)
+        finally:
+            self._inner_layout.loading = False
 
     def _update_pane(self, *events):
         callbacks = []
@@ -790,8 +876,8 @@ class ParamMethod(ReplacementPane):
                             p.name in w.parameter_names):
                             obj = p.cls if p.inst is None else p.inst
                             obj.param.unwatch(w)
-                            watchers.pop(watchers.index(w))
-                    deps.pop(deps.index(p))
+                            watchers.remove(w)
+                    deps.remove(p)
 
                 new_deps = [dep for dep in new_deps if dep not in deps]
                 for _, params in full_groupby(new_deps, lambda x: (x.inst or x.cls, x.what)):
@@ -815,9 +901,15 @@ class ParamMethod(ReplacementPane):
             watcher = pobj.param.watch(update_pane, ps, p.what)
             self._callbacks.append(watcher)
 
-    def _get_model(self, doc, root=None, parent=None, comm=None):
+    def _get_model(
+        self, doc: Document, root: Optional[Model] = None,
+        parent: Optional[Model] = None, comm: Optional[Comm] = None
+    ) -> Model:
         if not self._evaled:
-            self._replace_pane(force=True)
+            deferred = self.defer_load and not state.loaded
+            if deferred:
+                state.onload(partial(self._replace_pane, force=True))
+            self._replace_pane(force=not deferred)
         return super()._get_model(doc, root, parent, comm)
 
     #----------------------------------------------------------------
@@ -825,7 +917,7 @@ class ParamMethod(ReplacementPane):
     #----------------------------------------------------------------
 
     @classmethod
-    def applies(cls, obj):
+    def applies(cls, obj: Any) -> float | bool | None:
         return inspect.ismethod(obj) and isinstance(get_method_owner(obj), param.Parameterized)
 
 
@@ -839,11 +931,26 @@ class ParamFunction(ParamMethod):
     a widget to some other output.
     """
 
-    priority = 0.6
+    priority: ClassVar[float | bool | None] = 0.6
+
+    _applies_kw: ClassVar[bool] = True
 
     def _link_object_params(self):
         deps = getattr(self.object, '_dinfo', {})
         dep_params = list(deps.get('dependencies', [])) + list(deps.get('kw', {}).values())
+        if not dep_params and not self.lazy and not self.defer_load:
+            fn = getattr(self.object, '__bound_function__', self.object)
+            fn_name = getattr(fn, '__name__', repr(self.object))
+            self.param.warning(
+                f"The function {fn_name!r} does not have any dependencies "
+                "and will never update. Are you sure you did not intend "
+                "to depend on or bind a parameter or widget to this function? "
+                "If not simply call the function before passing it to Panel. "
+                "Otherwise, when passing a parameter as an argument, "
+                "ensure you pass at least one parameter and reference the "
+                "actual parameter object not the current value, i.e. use "
+                "object.param.parameter not object.parameter."
+            )
         grouped = defaultdict(list)
         for dep in dep_params:
             grouped[id(dep.owner)].append(dep)
@@ -862,9 +969,11 @@ class ParamFunction(ParamMethod):
     #----------------------------------------------------------------
 
     @classmethod
-    def applies(cls, obj):
+    def applies(cls, obj: Any, **kwargs) -> float | bool | None:
         if isinstance(obj, types.FunctionType):
             if hasattr(obj, '_dinfo'):
+                return True
+            if kwargs.get('defer_load') or (cls.param.defer_load.default is None and config.defer_load):
                 return True
             return None
         return False
@@ -909,7 +1018,8 @@ class JSONInit(param.Parameterized):
         if self.json_file or env_var.endswith('.json'):
             try:
                 fname = self.json_file if self.json_file else env_var
-                spec = json.load(open(os.path.abspath(fname), 'r'))
+                with open(fullpath(fname), 'r') as f:
+                    spec = json.load(f)
             except Exception:
                 warnobj.warning('Could not load JSON file %r' % spec)
         else:
@@ -954,3 +1064,10 @@ def link_param_method(root_view, root_model):
 
 
 Viewable._preprocessing_hooks.insert(0, link_param_method)
+
+__all__= (
+    "Param",
+    "ParamFunction",
+    "ParamMethod",
+    "set_values"
+)

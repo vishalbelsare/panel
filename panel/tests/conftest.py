@@ -1,23 +1,147 @@
 """
 A module containing testing utilities and fixtures.
 """
+import atexit
 import os
+import pathlib
 import re
 import shutil
+import signal
+import socket
 import tempfile
+import time
+
+from contextlib import contextmanager
+from subprocess import PIPE, Popen
 
 import pytest
 
-from contextlib import contextmanager
-
-from bokeh.document import Document
 from bokeh.client import pull_session
+from bokeh.document import Document
+from bokeh.model import Model
 from pyviz_comms import Comm
 
-from panel.pane import HTML, Markdown
+from panel import config, serve
+from panel.config import panel_extension
 from panel.io import state
-from panel import serve
+from panel.pane import HTML, Markdown
 
+CUSTOM_MARKS = ('ui', 'jupyter')
+
+JUPYTER_PORT = 8887
+JUPYTER_TIMEOUT = 15 # s
+JUPYTER_PROCESS = None
+
+def port_open(port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(1)
+    is_open = sock.connect_ex(("127.0.0.1", port)) == 0
+    sock.close()
+    return is_open
+
+def get_default_port():
+    # to get a different starting port per worker for pytest-xdist
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "0")
+    n = int(re.sub(r"\D", "", worker_id))
+    return 6000 + n * 30
+
+def start_jupyter():
+    global JUPYTER_PORT, JUPYTER_PROCESS
+    args = ['jupyter', 'server', '--port', str(JUPYTER_PORT), "--NotebookApp.token=''"]
+    JUPYTER_PROCESS = process = Popen(args, stdout=PIPE, stderr=PIPE, bufsize=1, encoding='utf-8')
+    deadline = time.monotonic() + JUPYTER_TIMEOUT
+    while True:
+        line = process.stderr.readline()
+        time.sleep(0.02)
+        if "http://127.0.0.1:" in line:
+            host = "http://127.0.0.1:"
+            break
+        if "http://localhost:" in line:
+            host = "http://localhost:"
+            break
+        if time.monotonic() > deadline:
+            raise TimeoutError(
+                'jupyter server did not start within {timeout} seconds.'
+            )
+    JUPYTER_PORT = int(line.split(host)[-1][:4])
+
+def cleanup_jupyter():
+    if JUPYTER_PROCESS is not None:
+        os.kill(JUPYTER_PROCESS.pid, signal.SIGTERM)
+
+@pytest.fixture
+def jupyter_preview(request):
+    path = pathlib.Path(request.fspath.dirname)
+    rel = path.relative_to(pathlib.Path(request.config.invocation_dir).absolute())
+    return f'http://localhost:{JUPYTER_PORT}/panel-preview/render/{str(rel)}'
+
+atexit.register(cleanup_jupyter)
+optional_markers = {
+    "ui": {
+        "help": "<Command line help text for flag1...>",
+        "marker-descr": "UI test marker",
+        "skip-reason": "Test only runs with the --ui option."
+    },
+    "jupyter": {
+        "help": "Runs Jupyter related tests",
+        "marker-descr": "Jupyter test marker",
+        "skip-reason": "Test only runs with the --jupyter option."
+    },
+    "docs": {
+        "help": "Runs docs specific tests",
+        "marker-descr": "Docs test marker",
+        "skip-reason": "Test only runs with the --docs option."
+    }
+}
+
+
+def pytest_addoption(parser):
+    for marker, info in optional_markers.items():
+        parser.addoption("--{}".format(marker), action="store_true",
+                         default=False, help=info['help'])
+
+
+def pytest_configure(config):
+    for marker, info in optional_markers.items():
+        config.addinivalue_line("markers",
+                                "{}: {}".format(marker, info['marker-descr']))
+    if getattr(config.option, 'jupyter') and not port_open(JUPYTER_PORT):
+        start_jupyter()
+
+
+def pytest_collection_modifyitems(config, items):
+    markers, skipped, selected = [], [], []
+    for marker, info in optional_markers.items():
+        if not config.getoption("--{}".format(marker)):
+            skip_test = pytest.mark.skip(
+                reason=info['skip-reason'].format(marker)
+            )
+            for item in items:
+                if marker in item.keywords:
+                    item.add_marker(skip_test)
+        else:
+            markers.append(marker)
+            for item in items:
+                if marker in item.keywords:
+                    selected.append(item)
+                else:
+                    skipped.append(item)
+    skip_test = pytest.mark.skip(
+        reason=f"test not one of {', '.join(markers)}"
+    )
+    for item in skipped:
+        if item in selected:
+            continue
+        item.add_marker(skip_test)
+
+
+@pytest.fixture
+def context(context):
+    # Set the default timeout to 20 secs
+    context.set_default_timeout(20_000)
+    yield context
+
+PORT = [get_default_port()]
 
 @pytest.fixture
 def document():
@@ -27,6 +151,12 @@ def document():
 @pytest.fixture
 def comm():
     return Comm()
+
+
+@pytest.fixture
+def port():
+    PORT[0] += 1
+    return PORT[0]
 
 
 @pytest.fixture
@@ -87,14 +217,15 @@ def tmpdir(request, tmpdir_factory):
 
 @pytest.fixture()
 def html_server_session():
+    port = 5050
     html = HTML('<h1>Title</h1>')
-    server = serve(html, port=5006, show=False, start=False)
+    server = serve(html, port=port, show=False, start=False)
     session = pull_session(
         session_id='Test',
         url="http://localhost:{:d}/".format(server.port),
         io_loop=server.io_loop
     )
-    yield html, server, session
+    yield html, server, session, port
     try:
         server.stop()
     except AssertionError:
@@ -103,14 +234,15 @@ def html_server_session():
 
 @pytest.fixture()
 def markdown_server_session():
+    port = 5051
     html = Markdown('#Title')
-    server = serve(html, port=5007, show=False, start=False)
+    server = serve(html, port=port, show=False, start=False)
     session = pull_session(
         session_id='Test',
         url="http://localhost:{:d}/".format(server.port),
         io_loop=server.io_loop
     )
-    yield html, server, session
+    yield html, server, session, port
     try:
         server.stop()
     except AssertionError:
@@ -118,7 +250,7 @@ def markdown_server_session():
 
 
 @pytest.fixture
-def multiple_apps_server_sessions():
+def multiple_apps_server_sessions(port):
     """Serve multiple apps and yield a factory to allow
     parameterizing the slugs and the titles."""
     servers = []
@@ -128,7 +260,7 @@ def multiple_apps_server_sessions():
             app1_slug: Markdown('First app'),
             app2_slug: Markdown('Second app')
         }
-        server = serve(apps, port=5008, title=titles, show=False, start=False)
+        server = serve(apps, port=port, title=titles, show=False, start=False)
         servers.append(server)
         session1 = pull_session(
             url=f"http://localhost:{server.port:d}/app1",
@@ -151,9 +283,11 @@ def multiple_apps_server_sessions():
 def with_curdoc():
     old_curdoc = state.curdoc
     state.curdoc = Document()
-    yield
-    state.curdoc = old_curdoc
-        
+    try:
+        yield
+    finally:
+        state.curdoc = old_curdoc
+
 
 @contextmanager
 def set_env_var(env_var, value):
@@ -167,18 +301,64 @@ def set_env_var(env_var, value):
 
 
 @pytest.fixture(autouse=True)
+def module_cleanup():
+    """
+    Cleanup Panel extensions after each test.
+    """
+    to_reset = list(panel_extension._imports.values())
+    Model.model_class_reverse_map = {
+        name: model for name, model in Model.model_class_reverse_map.items()
+        if not any(model.__module__.startswith(tr) for tr in to_reset)
+    }
+
+
+@pytest.fixture(autouse=True)
 def server_cleanup():
     """
-    Clean up after test fails
+    Clean up server state after each test.
     """
-    yield
-    state.kill_all_servers()
-    state._indicators.clear()
-    state._locations.clear()
+    try:
+        yield
+    finally:
+        state.kill_all_servers()
+        state._indicators.clear()
+        state._locations.clear()
+        state._templates.clear()
+        state._views.clear()
+        state._loaded.clear()
+        state.cache.clear()
+        state._scheduled.clear()
+        if state._thread_pool is not None:
+            state._thread_pool.shutdown(wait=False)
+            state._thread_pool = None
 
+@pytest.fixture(autouse=True)
+def cache_cleanup():
+    state.clear_caches()
 
 @pytest.fixture
 def py_file():
     tf = tempfile.NamedTemporaryFile(mode='w', suffix='.py')
-    yield tf
-    tf.close()
+    try:
+        yield tf
+    finally:
+        tf.close()
+
+
+@pytest.fixture
+def threads():
+    config.nthreads = 4
+    try:
+        yield 4
+    finally:
+        config.nthreads = None
+
+@pytest.fixture
+def nothreads():
+    yield
+
+@pytest.fixture
+def change_test_dir(request):
+    os.chdir(request.fspath.dirname)
+    yield
+    os.chdir(request.config.invocation_dir)

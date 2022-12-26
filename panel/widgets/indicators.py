@@ -1,25 +1,54 @@
+"""
+Indicators
+==========
+
+Indicators can be used to indicate status or progress
+
+Check out the Panel gallery of indicators
+https://panel.holoviz.org/reference/index.html#indicators for inspiration.
+
+How to use indicators
+---------------------
+
+>>> pn.indicators.Number(
+...    name='Rate', value=72, format='{value}%',
+...    colors=[(80, 'green'), (100, 'red')]
+... )
+"""
+from __future__ import annotations
+
+import math
 import os
 import sys
-import warnings
 
 from math import pi
+from typing import (
+    TYPE_CHECKING, ClassVar, Dict, List, Mapping, Optional, Type,
+)
 
 import numpy as np
 import param
 
+from bokeh.models import ColumnDataSource, FixedTicker
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource
 from tqdm.asyncio import tqdm as _tqdm
 
-from ..layout import Column, Row
+from ..layout import Column, Panel, Row
 from ..models import (
-    HTML, Progress as _BkProgress, TrendIndicator as _BkTrendIndicator
+    HTML, Progress as _BkProgress, TrendIndicator as _BkTrendIndicator,
 )
 from ..pane.markup import Str
 from ..reactive import SyncableData
 from ..util import escape, updating
 from ..viewable import Viewable
 from .base import Widget
+
+if TYPE_CHECKING:
+    from _thread import LockType
+
+    from bokeh.document import Document
+    from bokeh.model import Model
+    from pyviz_comms import Comm
 
 RED   = "#d9534f"
 GREEN = "#5cb85c"
@@ -42,6 +71,10 @@ class Indicator(Widget):
 
 
 class BooleanIndicator(Indicator):
+    """
+    BooleanIndicator is an abstract baseclass for indicators that
+    visually indicate a boolean value.
+    """
 
     value = param.Boolean(default=False, doc="""
         Whether the indicator is active or not.""")
@@ -50,10 +83,24 @@ class BooleanIndicator(Indicator):
 
 
 class BooleanStatus(BooleanIndicator):
+    """
+    The `BooleanStatus` is a boolean indicator providing a visual
+    representation of a boolean status as filled or non-filled circle.
+
+    If the value is set to `True` the indicator will be filled while
+    setting it to `False` will cause it to be non-filled.
+
+    Reference: https://panel.holoviz.org/reference/indicators/BooleanStatus.html
+
+    :Example:
+
+    >>> BooleanStatus(value=True, color='primary', width=100, height=100)
+    """
 
     color = param.ObjectSelector(default='dark', objects=[
-        'primary', 'secondary', 'success', 'info', 'danger', 'warning',
-        'light', 'dark'])
+        'primary', 'secondary', 'success', 'info', 'danger', 'warning', 'light', 'dark'], doc="""
+        The color of the circle, one of 'primary', 'secondary', 'success', 'info', 'danger',
+        'warning', 'light', 'dark'""")
 
     height = param.Integer(default=20, doc="""
         height of the circle.""")
@@ -64,22 +111,36 @@ class BooleanStatus(BooleanIndicator):
     value = param.Boolean(default=False, doc="""
         Whether the indicator is active or not.""")
 
-    _rename = {'color': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {}
 
-    _source_transforms = {'value': None}
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {'value': None, 'color': None}
 
-    _widget_type = HTML
+    _widget_type: ClassVar[Type[Model]] = HTML
 
     def _process_param_change(self, msg):
         msg = super()._process_param_change(msg)
         value = msg.pop('value', None)
-        if value is None:
+        color = msg.pop('color', None)
+        if value is None and not color:
             return msg
-        msg['css_classes'] = ['dot-filled', self.color] if value else ['dot']
+        msg['css_classes'] = ['dot-filled', self.color] if self.value else ['dot']
         return msg
 
 
 class LoadingSpinner(BooleanIndicator):
+    """
+    The `LoadingSpinner` is a boolean indicator providing a visual
+    representation of the loading status.
+
+    If the value is set to `True` the spinner will rotate while
+    setting it to `False` will disable the rotating segment.
+
+    Reference: https://panel.holoviz.org/reference/indicators/LoadingSpinner.html
+
+    :Example:
+
+    >>> LoadingSpinner(value=True, color='primary', bgcolor='light', width=100, height=100)
+    """
 
     bgcolor = param.ObjectSelector(default='light', objects=['dark', 'light'])
 
@@ -96,19 +157,21 @@ class LoadingSpinner(BooleanIndicator):
     value = param.Boolean(default=False, doc="""
         Whether the indicator is active or not.""")
 
-    _rename = {'color': None, 'bgcolor': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {}
 
-    _source_transforms = {'value': None}
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {'value': None, 'color': None, 'bgcolor': None}
 
-    _widget_type = HTML
+    _widget_type: ClassVar[Type[Model]] = HTML
 
     def _process_param_change(self, msg):
         msg = super()._process_param_change(msg)
         value = msg.pop('value', None)
-        if value is None:
+        color = msg.pop('color', None)
+        bgcolor = msg.pop('bgcolor', None)
+        if value is None and not (color or bgcolor):
             return msg
         color_cls = f'{self.color}-{self.bgcolor}'
-        msg['css_classes'] = ['loader', 'spin', color_cls] if value else ['loader', self.bgcolor]
+        msg['css_classes'] = ['loader', 'spin', color_cls] if self.value else ['loader', self.bgcolor]
         return msg
 
 
@@ -124,6 +187,21 @@ class ValueIndicator(Indicator):
 
 
 class Progress(ValueIndicator):
+    """
+    The `Progress` widget displays the progress towards some target
+    based on the current `value` and the `max` value.
+
+    If no `value` is set, the `Progress` widget is in indeterminate
+    mode and will animate depending on whether it is `active` or
+    not. A more beautiful indicator for this use case is the
+    `LoadingSpinner`.
+
+    Reference: https://panel.holoviz.org/reference/indicators/Progress.html
+
+    :Example:
+
+    >>> Progress(value=20, max=100, bar_color="primary")
+    """
 
     active = param.Boolean(default=True, doc="""
         If no value is set the active property toggles animation of the
@@ -135,27 +213,18 @@ class Progress(ValueIndicator):
 
     max = param.Integer(default=100, doc="The maximum value of the progress bar.")
 
-    value = param.Integer(default=-1, bounds=(-1, None),                           
-                          allow_None = True,#TODO: remove
-                          doc="""
+    value = param.Integer(default=-1, bounds=(-1, None), doc="""
         The current value of the progress bar. If set to -1 the progress
         bar will be indeterminate and animate depending on the active
         parameter.""")
 
-    _rename = {'name': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {'name': None}
 
-    _widget_type = _BkProgress
+    _widget_type: ClassVar[Type[Model]] = _BkProgress
 
     @param.depends('max', watch=True)
     def _update_value_bounds(self):
         self.param.value.bounds = (-1, self.max)
-        
-    @param.depends('value', watch=True)
-    def _warn_deprecation(self):
-        if self.value is None:
-            self.value = -1
-            warnings.warn('Setting the progress value to None is deprecated, use -1 instead.', 
-                          FutureWarning,  stacklevel=2)  
 
     def __init__(self,**params):
         super().__init__(**params)
@@ -164,32 +233,44 @@ class Progress(ValueIndicator):
 
 class Number(ValueIndicator):
     """
-    The Number indicator renders the value as text optionally colored
-    according to the color thresholds.
+    The `Number` indicator renders the `value` as text optionally
+    colored according to the `colors` thresholds.
+
+    Reference: https://panel.holoviz.org/reference/indicators/Number.html
+
+    :Example:
+
+    >>> Number(name='Rate', value=72, format='{value}%', colors=[(80, 'green'), (100, 'red')]
     """
 
-    default_color = param.String(default='black')
+    default_color = param.String(default='black', doc="""
+        The color of the Number indicator if no colors are provided""")
 
-    colors = param.List(default=None)
+    colors = param.List(default=None, doc="""
+        Color thresholds for the Number indicator, specified as a tuple of the absolute thresholds
+        and the color to switch to.""")
 
-    format = param.String(default='{value}')
+    format = param.String(default='{value}', doc="""
+        A formatter string which accepts a {value}.""")
 
-    font_size = param.String(default='54pt')
+    font_size = param.String(default='54pt', doc="""
+        The size of number itself.""")
 
     nan_format = param.String(default='-', doc="""
-      How to format nan values.""")
+        How to format nan values.""")
 
-    title_size = param.String(default='18pt')
+    title_size = param.String(default='18pt', doc="""
+        The size of the title given by the name.""")
 
-    _rename = {}
+    _rename: ClassVar[Mapping[str, str | None]] = {}
 
-    _source_transforms = {
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {
         'value': None, 'colors': None, 'default_color': None,
         'font_size': None, 'format': None, 'nan_format': None,
         'title_size': None
     }
 
-    _widget_type = HTML
+    _widget_type: ClassVar[Type[Model]] = HTML
 
     def _process_param_change(self, msg):
         msg = super()._process_param_change(msg)
@@ -220,21 +301,25 @@ class String(ValueIndicator):
     The String indicator renders a string with a title.
     """
 
-    default_color = param.String(default='black')
+    default_color = param.String(default='black', doc="""
+        The color of the Number indicator if no colors are provided""")
 
-    font_size = param.String(default='54pt')
+    font_size = param.String(default='54pt', doc="""
+        The size of number itself.""")
 
-    title_size = param.String(default='18pt')
+    title_size = param.String(default='18pt', doc="""
+        The size of the title given by the name.""")
 
-    value = param.String(default=None, allow_None=True)
+    value = param.String(default=None, allow_None=True, doc="""
+        The string to display""")
 
-    _rename = {}
+    _rename: ClassVar[Mapping[str, str | None]] = {}
 
-    _source_transforms = {
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {
         'value': None, 'default_color': None, 'font_size': None, 'title_size': None
     }
 
-    _widget_type = HTML
+    _widget_type: ClassVar[Type[Model]] = HTML
 
     def _process_param_change(self, msg):
         msg = super()._process_param_change(msg)
@@ -253,9 +338,15 @@ class String(ValueIndicator):
 
 class Gauge(ValueIndicator):
     """
-    A Gauge represents a value in some range as a position on
-    speedometer or gauge. It is similar to a Dial but visually a lot
+    A `Gauge` represents a value in some range as a position on
+    speedometer or gauge. It is similar to a `Dial` but visually a lot
     busier.
+
+    Reference: https://panel.holoviz.org/reference/indicators/Gauge.html
+
+    :Example:
+
+    >>> Gauge(name='Speed', value=79, bounds=(0, 200), colors=[(0.4, 'green'), (1, 'red')])
     """
 
     annulus_width = param.Integer(default=10, doc="""
@@ -302,9 +393,9 @@ class Gauge(ValueIndicator):
 
     width = param.Integer(default=300, bounds=(0, None))
 
-    _rename = {}
+    _rename: ClassVar[Mapping[str, str | None]] = {}
 
-    _source_transforms = {
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {
         'annulus_width': None, 'bounds': None, 'colors': None,
         'custom_opts': None, 'end_angle': None, 'format': None,
         'num_splits': None, 'show_ticks': None, 'show_labels': None,
@@ -373,8 +464,15 @@ class Gauge(ValueIndicator):
 
 class Dial(ValueIndicator):
     """
-    A Dial represents a value in some range as a position on an
-    annular dial. It is similar to a Gauge but more minimal visually.
+    A `Dial` represents a value in some range as a position on an
+    annular dial. It is similar to a `Gauge` but more minimal
+    visually.
+
+    Reference: https://panel.holoviz.org/reference/indicators/Dial.html
+
+    :Example:
+
+    >>> Dial(name='Speed', value=79, format="{value} km/h", bounds=(0, 200), colors=[(0.4, 'green'), (1, 'red')])
     """
 
     annulus_width = param.Number(default=0.2, doc="""
@@ -427,7 +525,7 @@ class Dial(ValueIndicator):
 
     width = param.Integer(default=250, bounds=(1, None))
 
-    _manual_params = [
+    _manual_params: ClassVar[List[str]] = [
         'value', 'start_angle', 'end_angle', 'bounds',
         'annulus_width', 'format', 'background', 'needle_width',
         'tick_size', 'title_size', 'value_size', 'colors',
@@ -435,9 +533,9 @@ class Dial(ValueIndicator):
         'width', 'nan_format', 'needle_color'
     ]
 
-    _data_params = _manual_params
+    _data_params: ClassVar[List[str]] = _manual_params
 
-    _rename = {'background': 'background_fill_color'}
+    _rename: ClassVar[Mapping[str, str | None]] = {'background': 'background_fill_color'}
 
     def __init__(self, **params):
         super().__init__(**params)
@@ -594,16 +692,301 @@ class Dial(ValueIndicator):
         model.select(name='label_source').data.update(labels)
 
 
+class LinearGauge(ValueIndicator):
+    """
+    A LinearGauge represents a value in some range as a position on an
+    linear scale. It is similar to a Dial/Gauge but visually more
+    compact.
+
+    Reference: https://panel.holoviz.org/reference/indicators/LinearGauge.html
+
+    :Example:
+
+    >>> LinearGauge(value=30, default_color='red', bounds=(0, 100))
+    """
+
+    bounds = param.Range(default=(0, 100), doc="""
+      The upper and lower bound of the gauge.""")
+
+    default_color = param.String(default='lightblue', doc="""
+      Color of the radial annulus if not color thresholds are supplied.""")
+
+    colors = param.Parameter(default=None, doc="""
+      Color thresholds for the gauge, specified as a list of tuples
+      of the fractional threshold and the color to switch to.""")
+
+    format = param.String(default='{value:.2f}%', doc="""
+      Formatting string for the value indicator and lower/upper bounds.""")
+
+    height = param.Integer(default=300, bounds=(1, None))
+
+    horizontal = param.Boolean(default=False, doc="""
+      Whether to display the linear gauge horizontally.""")
+
+    nan_format = param.String(default='-', doc="""
+      How to format nan values.""")
+
+    needle_color = param.String(default='black', doc="""
+      Color of the gauge needle.""")
+
+    show_boundaries = param.Boolean(default=False, doc="""
+      Whether to show the boundaries between colored regions.""")
+
+    unfilled_color = param.String(default='whitesmoke', doc="""
+      Color of the unfilled region of the LinearGauge.""")
+
+    title_size = param.String(default=None, doc="""
+      Font size of the gauge title.""")
+
+    tick_size = param.String(default=None, doc="""
+      Font size of the gauge tick labels.""")
+
+    value_size = param.String(default=None, doc="""
+      Font size of the gauge value label.""")
+
+    value = param.Number(default=25, allow_None=True, doc="""
+      Value to indicate on the dial a value within the declared bounds.""")
+
+    width = param.Integer(default=125, bounds=(1, None))
+
+    _manual_params = [
+        'value', 'bounds', 'format', 'title_size', 'value_size',
+        'horizontal', 'height', 'colors', 'tick_size',
+        'unfilled_color', 'width', 'nan_format', 'needle_color'
+    ]
+
+    _data_params = [
+        'value', 'bounds', 'format', 'nan_format', 'needle_color',
+        'colors'
+    ]
+
+    _rerender_params = ['horizontal']
+
+    _rename: ClassVar[Mapping[str, str | None]] = {
+        'background': 'background_fill_color', 'show_boundaries': None,
+        'default_color': None
+    }
+
+    _updates = False
+
+    def __init__(self, **params):
+        super().__init__(**params)
+        self._update_value_bounds()
+
+    @param.depends('bounds', watch=True)
+    def _update_value_bounds(self):
+        self.param.value.bounds = self.bounds
+
+    @property
+    def _color_intervals(self):
+        vmin, vmax = self.bounds
+        value = self.value
+        ncolors = len(self.colors) if self.colors else 1
+        interval = (vmax-vmin)
+        if math.isfinite(value):
+            fraction = value / interval
+            idx = round(fraction * (ncolors-1))
+        else:
+            fraction = 0
+            idx = 0
+        if not self.colors:
+            intervals = [
+                (fraction, self.default_color)
+            ]
+            intervals.append((1, self.unfilled_color))
+        elif self.show_boundaries:
+            intervals = [
+                c if isinstance(c, tuple) else ((i+1)/(ncolors), c)
+                for i, c in enumerate(self.colors)
+            ]
+        else:
+            intervals = [
+                self.colors[idx] if isinstance(self.colors[0], tuple)
+                else (fraction, self.colors[idx])
+            ]
+            intervals.append((1, self.unfilled_color))
+        return intervals
+
+    def _get_data(self):
+        vmin, vmax = self.bounds
+        value = self.value
+        interval = (vmax-vmin)
+        colors, values = [], [vmin]
+        above = False
+        prev = None
+        for (v, color) in self._color_intervals:
+            val = v*interval
+            if val == prev:
+                continue
+            elif val > value:
+                if not above:
+                    colors.append(color)
+                    values.append(value)
+                    above = True
+                color = self.unfilled_color
+            colors.append(color)
+            values.append(val)
+            prev = val
+        value = self.format.format(value=value).replace('nan', self.nan_format)
+        return (
+            {'y0': values[:-1], 'y1': values[1:], 'color': colors},
+            {'y': [self.value], 'text': [value]}
+        )
+
+    def _get_model(self, doc, root=None, parent=None, comm=None):
+        params = self._process_param_change(self._init_params())
+        model = figure(
+            outline_line_color=None, toolbar_location=None, tools=[],
+            x_axis_location='above', y_axis_location='right', **params
+        )
+        model.grid.visible = False
+        model.xaxis.major_label_standoff = 2
+        model.yaxis.major_label_standoff = 2
+        model.xaxis.axis_label_standoff = 2
+        model.yaxis.axis_label_standoff = 2
+        self._update_name(model)
+        self._update_title_size(model)
+        self._update_tick_size(model)
+        self._update_figure(model)
+        self._update_axes(model)
+        self._update_renderers(model)
+        self._update_bounds(model)
+        if root is None:
+            root = model
+        self._models[root.ref['id']] = (model, parent)
+        return model
+
+    def _update_name(self, model):
+        model.xaxis.axis_label = self.name
+        model.yaxis.axis_label = self.name
+
+    def _update_title_size(self, model):
+        title_size = self.title_size or f'{self.width/6}px'
+        model.xaxis.axis_label_text_font_size = title_size
+        model.yaxis.axis_label_text_font_size = title_size
+
+    def _update_tick_size(self, model):
+        tick_size = self.tick_size or f'{self.width/9}px'
+        model.xaxis.major_label_text_font_size = tick_size
+        model.yaxis.major_label_text_font_size = tick_size
+
+    def _update_renderers(self, model):
+        model.renderers = []
+        data, needle_data = self._get_data()
+        bar_source = ColumnDataSource(data=data, name='bar_source')
+        needle_source = ColumnDataSource(data=needle_data, name='needle_source')
+        if self.horizontal:
+            model.hbar(
+                y=0.1, left='y0', right='y1', height=1, color='color',
+                source=bar_source
+            )
+            wedge_params = {'y': 0.5, 'x': 'y', 'angle': np.deg2rad(180)}
+            text_params = {
+                'y': -0.4, 'x': 0, 'text_align': 'left',
+                'text_baseline': 'top'
+            }
+        else:
+            model.vbar(
+                x=0.1, bottom='y0', top='y1', width=0.9, color='color',
+                source=bar_source
+            )
+            wedge_params = {'x': 0.5, 'y': 'y', 'angle': np.deg2rad(90)}
+            text_params = {
+                'x': -0.4, 'y': 0, 'text_align': 'left',
+                'text_baseline': 'bottom', 'angle': np.deg2rad(90)
+            }
+        model.scatter(
+            fill_color=self.needle_color, line_color=self.needle_color,
+            source=needle_source, name='needle_renderer', marker='triangle',
+            size=int(self.width/8), level='overlay', **wedge_params
+        )
+        value_size = self.value_size or f'{self.width/8}px'
+        model.text(
+            text='text', source=needle_source, text_font_size=value_size,
+            **text_params
+        )
+
+    def _update_bounds(self, model):
+        if self.horizontal:
+            x_range, y_range = tuple(self.bounds), (-0.8, 0.5)
+        else:
+            x_range, y_range = (-0.8, 0.5), tuple(self.bounds)
+        model.x_range.update(start=x_range[0], end=x_range[1])
+        model.y_range.update(start=y_range[0], end=y_range[1])
+
+    def _update_axes(self, model):
+        vmin, vmax = self.bounds
+        interval = (vmax-vmin)
+        if self.show_boundaries:
+            ticks = [vmin] + [v*interval for (v, _) in self._color_intervals]
+        else:
+            ticks = [vmin, vmax]
+        ticker = FixedTicker(ticks=ticks)
+        if self.horizontal:
+            model.xaxis.visible = True
+            model.xaxis.ticker = ticker
+            model.yaxis.visible = False
+        else:
+            model.xaxis.visible = False
+            model.yaxis.visible = True
+            model.yaxis.ticker = ticker
+
+    def _update_figure(self, model):
+        params = self._process_param_change(self._init_params())
+        if self.horizontal:
+            params.update(width=self.height, height=self.width)
+        else:
+            params.update(width=self.width, height=self.height)
+        model.update(**params)
+
+    def _manual_update(self, events, model, doc, root, parent, comm):
+        update_data = False
+        for event in events:
+            if event.name in ('width', 'height'):
+                self._update_figure(model)
+            elif event.name == 'bounds':
+                self._update_bounds(model)
+                self._update_renderers(model)
+            elif event.name in self._data_params:
+                update_data = True
+            elif event.name == 'needle_color':
+                needle_r = model.select(name='needle_renderer')
+                needle_r.glyph.line_color = event.new
+                needle_r.glyph.fill_color = event.new
+            elif event.name == 'horizontal':
+                self._update_bounds(model)
+                self._update_figure(model)
+                self._update_axes(model)
+                self._update_renderers(model)
+            elif event.name == 'name':
+                self._update_name(model)
+            elif event.name == 'tick_size':
+                self._update_tick_size(model)
+            elif event.name == 'title_size':
+                self._update_title_size(model)
+        if not update_data:
+            return
+        data, needle_data = self._get_data()
+        model.select(name='bar_source').data.update(data)
+        model.select(name='needle_source').data.update(needle_data)
+
+
 class Trend(SyncableData, Indicator):
     """
-    The Trend indicator enables the user to display a Dashboard KPI Card.
+    The `Trend` indicator enables the user to display a dashboard kpi
+    card.
 
     The card can be layout out as:
 
-    * a column (text and plot on top of each other) or
-    * a row (text and plot after each other)
+    * a column (text and plot on top of each other) or a row (text and
+    * plot after each other)
 
-    The text section is responsive and resizes on window resize.
+    Reference: https://panel.holoviz.org/reference/indicators/Trend.html
+
+    :Example:
+
+    >>> data = {'x': np.arange(50), 'y': np.random.randn(50).cumsum()}
+    >>> Trend(title='Price', data=data, plot_type='area', width=200, height=200)
     """
 
     data = param.Parameter(doc="""
@@ -637,13 +1020,13 @@ class Trend(SyncableData, Indicator):
     value_change = param.Parameter(default='auto', doc="""
       A secondary value. For example the change in percent.""")
 
-    _data_params = ['data']
+    _data_params: ClassVar[List[str]] = ['data']
 
-    _manual_params = ['data']
+    _manual_params: ClassVar[List[str]] = ['data']
 
-    _rename = {'data': None, 'selection': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {'data': None, 'selection': None}
 
-    _widget_type = _BkTrendIndicator
+    _widget_type: ClassVar[Type[Model]] = _BkTrendIndicator
 
     def _get_data(self):
         if self.data is None:
@@ -714,8 +1097,9 @@ class ptqdm(_tqdm):
     def display(self, msg=None, pos=None, bar_style=None):
         super().display(msg, pos)
         style = self._indicator.text_pane.style or {}
-        color = self.colour or 'black'
-        self._indicator.text_pane.style = dict(style, color=color)
+        if not "color" in style:
+            color = self.colour or 'black'
+            self._indicator.text_pane.style = dict(style, color=color)
         if self.total is not None and self.n is not None:
             self._indicator.max = int(self.total) # Can be numpy.int64
             self._indicator.value = int(self.n)
@@ -733,11 +1117,32 @@ class ptqdm(_tqdm):
 
 
 class Tqdm(Indicator):
+    """
+    The `Tqdm` indicator wraps the well known `tqdm` progress
+    indicator and displays the progress towards some target in your
+    Panel app.
+
+    Reference: https://panel.holoviz.org/reference/indicators/Tqdm.html
+
+    :Example:
+
+    >>> tqdm = Tqdm()
+    >>> for i in tqdm(range(0,10), desc="My loop", leave=True, colour='#666666'):
+    ...     time.sleep(timeout)
+    """
+
+    value = param.Integer(default=0, bounds=(-1, None), doc="""
+        The current value of the progress bar. If set to -1 the progress
+        bar will be indeterminate and animate depending on the active
+        parameter.""")
 
     layout = param.ClassSelector(class_=(Column, Row), precedence=-1, constant=True, doc="""
         The layout for the text and progress indicator.""",)
-            
-    max = Progress.param.max
+
+    lock = param.ClassSelector(class_=object, default=None,
+                               doc="""The `mutithreading.Lock` or `multiprocessing.Lock` object to be used by Tqdm.""",)
+
+    max = param.Integer(default=100, doc="The maximum value of the progress bar.")
 
     progress = param.ClassSelector(class_=Progress, precedence=-1, doc="""
         The Progress indicator used to display the progress.""",)
@@ -747,9 +1152,6 @@ class Tqdm(Indicator):
 
     text_pane = param.ClassSelector(class_=Str, precedence=-1, doc="""
         The pane to display the text to.""")
-        
-    value = Progress.param.value
-    value.default = 0
 
     margin = param.Parameter(default=0, doc="""
         Allows to create additional space around the component. May
@@ -763,13 +1165,15 @@ class Tqdm(Indicator):
     write_to_console = param.Boolean(default=False, doc="""
         Whether or not to also write to the console.""")
 
-    _layouts = {Row: 'row', Column: 'column'}
+    _layouts: ClassVar[Dict[Type[Panel], str]] = {Row: 'row', Column: 'column'}
 
-    _rename = {'value': None, 'min': None, 'max': None, 'text': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {
+        'value': None, 'min': None, 'max': None, 'text': None
+    }
 
     def __init__(self, **params):
         layout = params.pop('layout', 'column')
-        layout = self._layouts.get(layout, layout) 
+        layout = self._layouts.get(layout, layout)
         if "text_pane" not in params:
             sizing_mode = 'stretch_width' if layout == 'column' else 'fixed'
             params["text_pane"] = Str(
@@ -800,20 +1204,39 @@ class Tqdm(Indicator):
         self.progress.max = self.max
         self.progress.value = self.value
         self.text_pane.object = self.text
+        # self._lock used by tqdm.contrib.concurrent.process_map
+        try:
+            from multiprocessing import Lock
+            self._lock = params.pop('lock', Lock())
+        except ImportError:
+            # process_map won't work without a lock explicitly provided
+            # but everything else will
+            self._lock = params.pop('lock', None)
 
-    def _get_model(self, doc, root=None, parent=None, comm=None):
+    def _get_model(
+        self, doc: Document, root: Optional[Model] = None,
+        parent: Optional[Model] = None, comm: Optional[Comm] = None
+    ) -> Model:
         model = self.layout._get_model(doc, root, parent, comm)
         if root is None:
             root = model
         self._models[root.ref['id']] = (model, parent)
         return model
 
-    def _cleanup(self, root):
+    def _cleanup(self, root: Model | None = None) -> None:
         super()._cleanup(root)
         self.layout._cleanup(root)
 
     def _update_layout(self, *events):
         self.layout.param.update(**{event.name: event.new for event in events})
+
+    # used by tqdm.contrib.concurrent.process_map
+    def get_lock(self) -> LockType:
+        return self._lock
+
+    # used by tqdm.contrib.concurrent.process_map
+    def set_lock(self, lock: LockType) -> None:
+        self._lock = lock
 
     @param.depends("text", watch=True)
     def _update_text(self):
@@ -850,3 +1273,18 @@ class Tqdm(Indicator):
         """Resets the parameters"""
         self.value = self.param.value.default
         self.text = self.param.text.default
+
+__all__ = [
+    "BooleanIndicator",
+    "BooleanStatus",
+    "Dial",
+    "Gauge",
+    "LinearGauge",
+    "LoadingSpinner",
+    "Number",
+    "Progress",
+    "String",
+    "Tqdm",
+    "Trend",
+    "ValueIndicator",
+]

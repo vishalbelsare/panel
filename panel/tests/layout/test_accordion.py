@@ -2,9 +2,10 @@ import pytest
 
 from bokeh.models import Column as BkColumn, Div
 
+import panel as pn
+
 from panel.layout import Accordion
 from panel.models import Card
-from panel.pane import Pane
 
 
 @pytest.fixture
@@ -57,8 +58,8 @@ def test_accordion_constructor(document, comm):
 
 def test_accordion_implicit_constructor(document, comm):
     div1, div2 = Div(), Div()
-    p1 = Pane(div1, name='Div1')
-    p2 = Pane(div2, name='Div2')
+    p1 = pn.panel(div1, name='Div1')
+    p2 = pn.panel(div2, name='Div2')
     accordion = Accordion(p1, p2)
 
     model = accordion.get_root(document, comm=comm)
@@ -76,8 +77,8 @@ def test_accordion_implicit_constructor(document, comm):
 
 def test_accordion_constructor_with_named_objects(document, comm):
     div1, div2 = Div(), Div()
-    p1 = Pane(div1, name='Div1')
-    p2 = Pane(div2, name='Div2')
+    p1 = pn.panel(div1, name='Div1')
+    p2 = pn.panel(div2, name='Div2')
     accordion = Accordion(('Tab1', p1), ('Tab2', p2))
 
     model = accordion.get_root(document, comm=comm)
@@ -168,3 +169,11 @@ def test_accordion_set_card_collapsed_toggle(document, comm, accordion):
     assert accordion.active == [1]
 
     assert len(events) == 2
+
+
+def test_accordion_active_on_init(document, comm):
+    combinations = [[0], [1], [0, 1]]
+    for combination in combinations:
+        accordion = Accordion("1", "2", active=combination)
+        accordion.get_root(document, comm=comm)
+        assert accordion.active == combination

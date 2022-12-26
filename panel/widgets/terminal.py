@@ -4,6 +4,8 @@ The Terminal Widget makes it easy to create Panel Applications with Terminals.
 - For example apps which streams the output of processes or logs.
 - For example apps which provide interactive bash, python or ipython terminals
 """
+from __future__ import annotations
+
 import os
 import select
 import shlex
@@ -11,7 +13,7 @@ import signal
 import subprocess
 import sys
 
-from functools import partial
+from typing import ClassVar, Mapping
 
 import param
 
@@ -79,6 +81,7 @@ class TerminalSubprocess(param.Parameterized):
         Runs a subprocess command.
         """
         import pty
+
         # Inspiration: https://github.com/cs01/pyxtermjs
         # Inspiration: https://github.com/jupyter/terminado
         if not args:
@@ -134,9 +137,9 @@ class TerminalSubprocess(param.Parameterized):
     def _set_winsize(self):
         if self._fd is None:
             return
-        import termios
-        import struct
         import fcntl
+        import struct
+        import termios
         winsize = struct.pack("HHHH", self._terminal.nrows, self._terminal.ncols, 0, 0)
         fcntl.ioctl(self._fd, termios.TIOCSWINSZ, winsize)
 
@@ -214,9 +217,17 @@ class TerminalSubprocess(param.Parameterized):
 
 class Terminal(Widget):
     """
-    The Terminal widget renders a live terminal in the browser using
+    The `Terminal` widget renders a live terminal in the browser using
     the xterm.js library making it possible to display logs or even
     provide an interactive terminal in a Panel application.
+
+    Reference: https://panel.holoviz.org/reference/widgets/Terminal.html
+
+    :Example:
+
+    >>> Terminal(
+    ...     "Welcome to the Panel Terminal!", options={"cursorBlink": True}
+    ... )
     """
 
     clear = param.Action(doc="Clears the Terminal.", constant=True)
@@ -244,7 +255,7 @@ class Terminal(Widget):
 
     _output = param.String(default="")
 
-    _rename = {
+    _rename: ClassVar[Mapping[str, str | None]] = {
         "clear": None,
         "output": None,
         "_output": "output",
@@ -282,10 +293,7 @@ class Terminal(Widget):
             )
         model = super()._get_model(doc, root, parent, comm)
         model.output = self.output
-        if comm:
-            model.on_event('keystroke', self._process_event)
-        else:
-            model.on_event('keystroke', partial(self._server_event, doc))
+        self._register_events('keystroke', model=model, doc=doc, comm=comm)
         return model
 
     def _process_event(self, event):

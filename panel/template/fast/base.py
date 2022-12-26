@@ -2,6 +2,7 @@ import pathlib
 
 import param
 
+from ...config import config
 from ...io.state import state
 from ..base import BasicTemplate
 from ..react import ReactTemplate
@@ -12,7 +13,7 @@ _ROOT = pathlib.Path(__file__).parent
 
 class FastBaseTemplate(BasicTemplate):
 
-    accent_base_color = param.String(doc="""
+    accent_base_color = param.String(default="#0072B5", doc="""
         Optional body accent color override.""")
 
     background_color = param.String(doc="""
@@ -65,10 +66,24 @@ class FastBaseTemplate(BasicTemplate):
 
     _resources = {
         'js_modules': {
-            'fast-colors': 'https://unpkg.com/@microsoft/fast-colors@5.1.0',
-            'fast': 'https://unpkg.com/@microsoft/fast-components@1.13.0'
+            'fast-colors': f'{config.npm_cdn}/@microsoft/fast-colors@5.3.1/dist/index.js',
+            'fast': f'{config.npm_cdn}/@microsoft/fast-components@1.21.8/dist/fast-components.js'
         },
-        'bundle': False
+        'bundle': True,
+        'tarball': {
+            'fast-colors': {
+                'tar': 'https://registry.npmjs.org/@microsoft/fast-colors/-/fast-colors-5.3.1.tgz',
+                'src': 'package/',
+                'dest': '@microsoft/fast-colors@5.3.1',
+                'exclude': ['*.d.ts', '*.json', '*.md', '*/esm/*']
+            },
+            'fast': {
+                'tar': 'https://registry.npmjs.org/@microsoft/fast-components/-/fast-components-1.21.8.tgz',
+                'src': 'package/',
+                'dest': '@microsoft/fast-components@1.21.8',
+                'exclude': ['*.d.ts', '*.json', '*.md', '*/esm/*']
+            }
+        }
     }
 
     __abstract = True
@@ -81,6 +96,12 @@ class FastBaseTemplate(BasicTemplate):
             params['theme'] = DefaultTheme
         elif isinstance(params['theme'], str):
             params['theme'] = THEMES[params['theme']]
+        if "accent" in params:
+            accent = params.pop("accent")
+            if not "accent_base_color" in params:
+                params["accent_base_color"]=accent
+            if not "header_background" in params:
+                params["header_background"]=accent
 
         super().__init__(**params)
         theme = self._get_theme()

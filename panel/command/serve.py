@@ -5,40 +5,37 @@ ways.
 
 import ast
 import base64
-import logging # isort:skip
+import logging
 import os
+import pathlib
 
 from glob import glob
-
-from bokeh.command.subcommands.serve import Serve as _BkServe
-from bokeh.command.util import build_single_handler_applications
+from types import ModuleType
 
 from bokeh.application import Application
-from bokeh.application.handlers.document_lifecycle import DocumentLifecycleHandler
+from bokeh.application.handlers.document_lifecycle import (
+    DocumentLifecycleHandler,
+)
 from bokeh.application.handlers.function import FunctionHandler
+from bokeh.command.subcommands.serve import Serve as _BkServe
+from bokeh.command.util import build_single_handler_applications
+from bokeh.core.validation import silence
+from bokeh.core.validation.warnings import EMPTY_LAYOUT
 from bokeh.server.contexts import ApplicationContext
-from tornado.ioloop import PeriodicCallback, IOLoop
+from tornado.ioloop import PeriodicCallback
 from tornado.web import StaticFileHandler
 
 from ..auth import OAuthProvider
 from ..config import config
-from ..io.rest import REST_PROVIDERS
+from ..io.document import _cleanup_doc
+from ..io.liveness import LivenessHandler
 from ..io.reload import record_modules, watch
+from ..io.rest import REST_PROVIDERS
 from ..io.server import INDEX_HTML, get_static_routes, set_curdoc
 from ..io.state import state
+from ..util import fullpath
 
 log = logging.getLogger(__name__)
-
-
-def _cleanup_doc(doc):
-    for callback in doc.session_destroyed_callbacks:
-        try:
-            callback(None)
-        except Exception:
-            pass
-    doc.callbacks._change_callbacks[None] = {}
-    doc.destroy(None)
-
 
 def parse_var(s):
     """
@@ -68,10 +65,9 @@ def parse_vars(items):
 class AdminApplicationContext(ApplicationContext):
 
     def __init__(self, application, unused_timeout=15000, **kwargs):
-        super().__init__(application, io_loop=IOLoop.current(), **kwargs)
+        super().__init__(application, **kwargs)
         self._unused_timeout = unused_timeout
         self._cleanup_cb = None
-        self._loop.add_callback(self.run_load_hook)
 
     async def cleanup_sessions(self):
         await self._cleanup_sessions(self._unused_timeout)
@@ -131,11 +127,21 @@ class Serve(_BkServe):
             type    = str,
             help    = "A random string used to encode the user information."
         )),
+        ('--oauth-error-template', dict(
+            action = 'store',
+            type    = str,
+            help    = "A random string used to encode the user information."
+        )),
         ('--oauth-expiry-days', dict(
             action  = 'store',
             type    = float,
             help    = "Expiry off the OAuth cookie in number of days.",
             default = 1
+        )),
+        ('--auth-template', dict(
+            action  = 'store',
+            type    = str,
+            help    = "Template to serve when user is unauthenticated."
         )),
         ('--rest-provider', dict(
             action = 'store',
@@ -169,13 +175,48 @@ class Serve(_BkServe):
         ('--profiler', dict(
             action  = 'store',
             type    = str,
-            help    = "The profiler to use by default, e.g. pyinstrument or snakeviz."
+            help    = "The profiler to use by default, e.g. pyinstrument, snakeviz or memray."
         )),
         ('--autoreload', dict(
             action  = 'store_true',
             help    = "Whether to autoreload source when script changes."
-        ))
+        )),
+        ('--num-threads', dict(
+            action  = 'store',
+            type    = int,
+            help    = "Whether to start a thread pool which events are dispatched to.",
+            default = None
+        )),
+        ('--setup', dict(
+            action  = 'store',
+            type    = str,
+            help    = "Path to a setup script to run before server starts.",
+            default = None
+        )),
+        ('--liveness', dict(
+            action  = 'store_true',
+            help    = "Whether to add a liveness endpoint."
+        )),
+        ('--liveness-endpoint', dict(
+            action  = 'store',
+            type    = str,
+            help    = "The endpoint for the liveness API.",
+            default = "liveness"
+        )),
     )
+
+    # Supported file extensions
+    _extensions = ['.py']
+
+    def customize_applications(self, args, applications):
+        if args.index and not args.index.endswith('.html'):
+            index = args.index.split(os.path.sep)[-1]
+            for ext in self._extensions:
+                if index.endswith(ext):
+                    index = index[:-len(ext)]
+            if f'/{index}' in applications:
+                applications['/'] = applications[f'/{index}']
+        return super().customize_applications(args, applications)
 
     def customize_kwargs(self, args, server_kwargs):
         '''Allows subclasses to customize ``server_kwargs``.
@@ -189,9 +230,8 @@ class Serve(_BkServe):
         # Handle tranquilized functions in the supplied functions
         kwargs['extra_patterns'] = patterns = kwargs.get('extra_patterns', [])
 
-        if args.static_dirs:
-            static_dirs = parse_vars(args.static_dirs)
-            patterns += get_static_routes(static_dirs)
+        static_dirs = parse_vars(args.static_dirs) if args.static_dirs else {}
+        patterns += get_static_routes(static_dirs)
 
         files = []
         for f in args.files:
@@ -200,12 +240,26 @@ class Serve(_BkServe):
             else:
                 files.append(f)
 
-        if args.index and not args.index.endswith('.html') and not any(f.endswith(args.index) for f in files):
-            raise ValueError("The --index argument must either specify a jinja2 "
-                             "template with a .html file extension or select one "
-                             "of the applications being served as the default. "
-                             f"The specified application {args.index!r} could "
-                             "not be found.")
+        if args.index and not args.index.endswith('.html'):
+            found = False
+            for ext in self._extensions:
+                index = args.index if args.index.endswith(ext) else f'{args.index}{ext}'
+                if any(f.endswith(index) for f in files):
+                    found = True
+            # Check for directory style applications
+            for f in files:
+                if '.' in os.path.basename(f): # Skip files with extension
+                    continue
+                if args.index == os.path.basename(f) or args.index == f:
+                    found = True
+            if not found:
+                raise ValueError(
+                    "The --index argument must either specify a jinja2 "
+                    "template with a .html file extension or select one "
+                    "of the applications being served as the default. "
+                    f"The specified application {index!r} could not be "
+                    "found."
+                )
 
         # Handle tranquilized functions in the supplied functions
         if args.rest_provider in REST_PROVIDERS:
@@ -219,6 +273,18 @@ class Serve(_BkServe):
         if config.autoreload:
             for f in files:
                 watch(f)
+
+        if args.setup:
+            setup_path = args.setup
+            with open(setup_path) as f:
+                setup_source = f.read()
+            nodes = ast.parse(setup_source, os.fspath(setup_path))
+            code = compile(nodes, filename=setup_path, mode='exec', dont_inherit=True)
+            module_name = 'panel_setup_module'
+            module = ModuleType(module_name)
+            module.__dict__['__file__'] = fullpath(setup_path)
+            exec(code, module.__dict__)
+            state._setup_module = module
 
         if args.warm or args.autoreload:
             argvs = {f: args.args for f in files}
@@ -237,12 +303,10 @@ class Serve(_BkServe):
                         state._on_load(None)
                     _cleanup_doc(doc)
 
-        prefix = args.prefix
-        if prefix is None:
-            prefix = ""
-        prefix = prefix.strip("/")
-        if prefix:
-            prefix = "/" + prefix
+        if args.liveness:
+            argvs = {f: args.args for f in files}
+            applications = build_single_handler_applications(files, argvs)
+            patterns += [(r"/%s" % args.liveness_endpoint, LivenessHandler, dict(applications=applications))]
 
         config.profiler = args.profiler
         if args.admin:
@@ -251,14 +315,15 @@ class Serve(_BkServe):
             config._admin = True
             app = Application(FunctionHandler(admin_panel))
             unused_timeout = args.check_unused_sessions or 15000
-            app_ctx = AdminApplicationContext(app, unused_timeout=unused_timeout, url='/admin')
+            state._admin_context = app_ctx = AdminApplicationContext(
+                app, unused_timeout=unused_timeout, url='/admin'
+            )
             if all(not isinstance(handler, DocumentLifecycleHandler) for handler in app._handlers):
                 app.add(DocumentLifecycleHandler())
             app_patterns = []
             for p in per_app_patterns:
                 route = '/admin' + p[0]
                 context = {"application_context": app_ctx}
-                route = prefix + route
                 app_patterns.append((route, p[1], context))
 
             websocket_path = None
@@ -285,8 +350,30 @@ class Serve(_BkServe):
             patterns.extend(pattern)
             state.publish('session_info', state, ['session_info'])
 
+        if args.num_threads is not None:
+            if config.nthreads is not None:
+                raise ValueError(
+                    "Supply num_threads either using the environment variable "
+                    "PANEL_NUM_THREADS or as an explicit argument, not both."
+                )
+            config.nthreads = args.num_threads
+
+        if args.auth_template:
+            authpath = pathlib.Path(args.auth_template)
+            if not authpath.isfile():
+                raise ValueError(
+                    "The supplied auth-template {args.auth_template} does not "
+                    "exist, ensure you supply and existing Jinja2 template."
+                )
+            config.auth_template = str(authpath.absolute())
+        if args.oauth_provider and config.oauth_provider:
+                raise ValueError(
+                    "Supply OAuth provider either using environment variable "
+                    "or via explicit argument, not both."
+                )
         if args.oauth_provider:
             config.oauth_provider = args.oauth_provider
+        if config.oauth_provider:
             config.oauth_expiry = args.oauth_expiry_days
             if config.oauth_key and args.oauth_key:
                 raise ValueError(
@@ -341,12 +428,12 @@ class Serve(_BkServe):
                         "base64-encoded bytes."
                     )
                 config.oauth_encryption_key = encryption_key
-            else:
+            elif not config.oauth_encryption_key:
                 print("WARNING: OAuth has not been configured with an "
                       "encryption key and will potentially leak "
                       "credentials in cookies and a JWT token embedded "
                       "in the served website. Use at your own risk or "
-                      "generate a key with the `panel oauth-key` CLI "
+                      "generate a key with the `panel oauth-secret` CLI "
                       "command and then provide it to `panel serve` "
                       "using the PANEL_OAUTH_ENCRYPTION environment "
                       "variable or the --oauth-encryption-key CLI "
@@ -370,14 +457,20 @@ class Serve(_BkServe):
                 )
             elif args.cookie_secret:
                 config.cookie_secret = args.cookie_secret
-            else:
+            elif not config.cookie_secret:
                 raise ValueError(
                     "When enabling an OAuth provider you must supply "
                     "a valid cookie_secret either using the --cookie-secret "
                     "CLI argument or the PANEL_COOKIE_SECRET environment "
                     "variable."
                 )
-            kwargs['auth_provider'] = OAuthProvider()
+            if args.oauth_error_template:
+                error_template = str(pathlib.Path(args.oauth_error_template).absolute())
+            elif config.auth_template:
+                error_template = config.auth_template
+            else:
+                error_template = None
+            kwargs['auth_provider'] = OAuthProvider(error_template=error_template)
 
             if args.oauth_redirect_uri and config.oauth_redirect_uri:
                 raise ValueError(
@@ -399,3 +492,9 @@ class Serve(_BkServe):
             kwargs['cookie_secret'] = config.cookie_secret
 
         return kwargs
+
+    def invoke(self, args):
+        # Empty layout are valid and the Bokeh warning is silenced as usually
+        # not relevant to Panel users.
+        silence(EMPTY_LAYOUT, True)
+        super().invoke(args)

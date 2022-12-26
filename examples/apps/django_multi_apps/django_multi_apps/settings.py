@@ -11,8 +11,16 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+
 from pathlib import Path
+
 from bokeh.settings import bokehjsdir, settings
+
+try:
+    import bokeh_django
+    bokeh_app_module = 'bokeh_django'
+except ModuleNotFoundError:
+    bokeh_app_module = 'bokeh.server.django'
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -38,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     # local
     'channels',
-    'bokeh.server.django',
+    bokeh_app_module,
     'sliders.apps.SlidersConfig',
     'gbm.apps.GbmConfig',
     'landing.apps.LandingConfig',

@@ -3,6 +3,10 @@ Bootstrap inspired Alerts
 
 See https://getbootstrap.com/docs/4.0/components/alerts/
 """
+from __future__ import annotations
+
+from typing import Any, ClassVar, Mapping
+
 import param
 
 from panel.pane.markup import Markdown
@@ -12,20 +16,24 @@ ALERT_TYPES = ["primary", "secondary", "success", "danger", "warning", "info", "
 
 class Alert(Markdown):
     """
-    An Alert that renders Markdown
+    The `Alert` pane allows providing contextual feedback messages for typical
+    user actions. The Alert supports markdown strings.
 
-    - CSS Styling is done via the classes `alert` and `alert-TYPE`, where TYPE is the alert_type.
-    - sizing_mode is set to `stretch_width` by default
+    Reference: https://panel.holoviz.org/reference/panes/Alert.html
+
+    :Example:
+
+    >>> Alert('Some important message', alert_type='warning')
     """
 
     alert_type = param.ObjectSelector("primary", objects=ALERT_TYPES)
 
-    priority = 0
+    priority: ClassVar[float | bool | None] = 0
 
-    _rename = dict(Markdown._rename, alert_type=None)
+    _rename: ClassVar[Mapping[str, str | None]] = dict(Markdown._rename, alert_type=None)
 
     @classmethod
-    def applies(cls, obj):
+    def applies(cls, obj: Any) -> float | bool | None:
         priority = Markdown.applies(obj)
         return 0 if priority else False
 

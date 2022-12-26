@@ -2,11 +2,11 @@
 Defines a custom PlotlyPlot bokeh model to render Plotly plots.
 """
 from bokeh.core.properties import (
-    Any, Bool, Dict, Either, Enum, Int, Instance, List, Null, Nullable, String
+    Any, Bool, Dict, Either, Enum, Instance, Int, List, Null, Nullable, String,
 )
-from bokeh.models import LayoutDOM, ColumnDataSource
+from bokeh.models import ColumnDataSource, LayoutDOM
 
-from ..io.resources import bundled_files
+from ..io.resources import JS_URLS, bundled_files
 from ..util import classproperty
 
 
@@ -17,8 +17,8 @@ class PlotlyPlot(LayoutDOM):
     """
 
     __javascript_raw__ = [
-        'https://code.jquery.com/jquery-3.5.1.min.js',
-        'https://cdn.plot.ly/plotly-latest.min.js'
+        JS_URLS['jQuery'],
+        'https://cdn.plot.ly/plotly-2.10.1.min.js'
     ]
 
     @classproperty
@@ -31,7 +31,7 @@ class PlotlyPlot(LayoutDOM):
 
     __js_require__ = {
         'paths': {
-            'plotly': 'https://cdn.plot.ly/plotly-latest.min'
+            'plotly': 'https://cdn.plot.ly/plotly-2.10.1.min'
         },
         'exports': {'plotly': 'Plotly'}
     }
@@ -39,6 +39,8 @@ class PlotlyPlot(LayoutDOM):
     data = List(Any)
 
     layout = Dict(String, Any)
+
+    frames = List(Any)
 
     config = Dict(String, Any)
 

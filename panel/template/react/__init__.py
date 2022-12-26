@@ -5,7 +5,9 @@ import pathlib
 
 import param
 
+from ...config import config
 from ...depends import depends
+from ...io.resources import CSS_URLS
 from ...layout import Card, GridSpec
 from ..base import BasicTemplate
 from ..theme import DarkTheme, DefaultTheme
@@ -50,14 +52,14 @@ class ReactTemplate(BasicTemplate):
 
     _resources = {
         'js': {
-            'react': "https://unpkg.com/react@16/umd/react.development.js",
-            'react-dom': "https://unpkg.com/react-dom@16/umd/react-dom.development.js",
-            'babel': "https://unpkg.com/babel-standalone@latest/babel.min.js",
+            'react': f"{config.npm_cdn}/react@18/umd/react.production.min.js",
+            'react-dom': f"{config.npm_cdn}/react-dom@18/umd/react-dom.production.min.js",
+            'babel': f"{config.npm_cdn}/babel-standalone@latest/babel.min.js",
             'react-grid': "https://cdnjs.cloudflare.com/ajax/libs/react-grid-layout/1.1.1/react-grid-layout.min.js"
         },
         'css': {
-            'bootstrap': "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css",
-            'font-awesome': "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+            'bootstrap': CSS_URLS['bootstrap4'],
+            'font-awesome': CSS_URLS['font-awesome']
         }
     }
 

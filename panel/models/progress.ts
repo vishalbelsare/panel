@@ -62,7 +62,7 @@ export class ProgressView extends HTMLBoxView {
     if (this.model.max != null)
       this.progressEl.max = this.model.max
   }
-  
+
   _update_layout(): void {
     let changed = ((this._prev_sizing_mode !== undefined) &&
                    (this._prev_sizing_mode !== this.model.sizing_mode))
@@ -97,12 +97,12 @@ export class Progress extends HTMLBox {
 
   static init_Progress(): void {
     this.prototype.default_view = ProgressView
-    this.define<Progress.Props>({
-      active:    [ p.Boolean, true ],
-      bar_color: [ p.String, 'primary' ],
-      style:     [ p.Any, {} ],
-      max:       [ p.Number, 100 ],
-      value:     [ p.Any, null ],
-    })
+    this.define<Progress.Props>(({Any, Boolean, Number, String}) => ({
+      active:    [ Boolean, true ],
+      bar_color: [ String, 'primary' ],
+      style:     [ Any, {} ],
+      max:       [ Number, 100 ],
+      value:     [ Any, null ],
+    }))
   }
 }

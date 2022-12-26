@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, ClassVar, Mapping
+
 import param
 
 from bokeh.models import Column as BkColumn, CustomJS
@@ -5,9 +9,29 @@ from bokeh.models import Column as BkColumn, CustomJS
 from .base import NamedListPanel
 from .card import Card
 
+if TYPE_CHECKING:
+    from bokeh.model import Model
+
 
 class Accordion(NamedListPanel):
-    
+    """
+    The `Accordion` layout is a type of `Card` layout that allows switching
+    between multiple objects by clicking on the corresponding card header.
+
+    The labels for each card will default to the `name` parameter of the card’s
+    contents, but may also be defined explicitly as part of a tuple.
+
+    Like `Column` and `Row`, `Accordion` has a list-like API that allows
+    interactively updating and modifying the cards using the methods `append`,
+    `extend`, `clear`, `insert`, `pop`, `remove` and `__setitem__`.
+
+    Reference: https://panel.holoviz.org/reference/layouts/Accordion.html
+
+    :Example:
+
+    >>> pn.Accordion(some_pane_with_a_name, ("Plot", some_plot))
+    """
+
     active_header_background = param.String(default='#ccc', doc="""
         Color for currently active headers.""")
 
@@ -24,8 +48,8 @@ class Accordion(NamedListPanel):
         Whether to toggle between active cards or allow multiple cards""")
 
     _bokeh_model = BkColumn
-    
-    _rename = {'active': None, 'active_header_background': None,
+
+    _rename: ClassVar[Mapping[str, str | None]] = {'active': None, 'active_header_background': None,
                'header_background': None, 'objects': 'children',
                'dynamic': None, 'toggle': None, 'header_color': None}
 
@@ -73,6 +97,7 @@ class Accordion(NamedListPanel):
 
         ref = root.ref['id']
         current_objects = list(self)
+        self._updating_active = True
         for i, (name, pane) in enumerate(zip(self._names, self)):
             params.update(self._apply_style(i))
             if id(pane) in self._panels:
@@ -97,11 +122,14 @@ class Accordion(NamedListPanel):
                 except RerenderError:
                     return self._get_objects(model, current_objects[:i], doc, root, comm)
             new_models.append(panel)
+
+        self._updating_active = False
+        self._set_active()
         self._update_cards()
         self._update_active()
         return new_models
 
-    def _cleanup(self, root):
+    def _cleanup(self, root: Model | None = None) -> None:
         for panel in self._panels.values():
             panel._cleanup(root)
         super()._cleanup(root)
@@ -120,7 +148,7 @@ class Accordion(NamedListPanel):
             return
         self._updating_active = True
         try:
-            if self.toggle and not events[0].new:
+            if self.toggle and events and not events[0].new:
                 active = [list(self._panels.values()).index(events[0].obj)]
             else:
                 active = []
@@ -129,7 +157,7 @@ class Accordion(NamedListPanel):
                         continue
                     elif not self._panels[id(pane)].collapsed:
                         active.append(i)
-            
+
             if not self.toggle or active:
                 self.active = active
         finally:

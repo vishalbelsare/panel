@@ -1,6 +1,8 @@
 import pytest
 
 from panel.depends import bind, param_value_if_widget
+from panel.pane import panel
+from panel.param import ParamFunction
 from panel.widgets import IntSlider
 
 
@@ -124,16 +126,16 @@ def test_bind_bound_function_to_arg():
 
     def divide(value):
         return value / 2
-    
+
     bound_function = bind(divide, bind(add1, widget.param.value))
 
     assert bound_function() == 1
 
     widget.value = 3
-    
+
     assert bound_function() == 2
 
-    
+
 def test_bind_bound_function_to_kwarg():
     widget = IntSlider(value=1)
 
@@ -142,11 +144,29 @@ def test_bind_bound_function_to_kwarg():
 
     def divide(divisor=2, value=0):
         return value / divisor
-    
+
     bound_function = bind(divide, value=bind(add1, widget.param.value))
 
     assert bound_function() == 1
 
     widget.value = 3
-    
+
     assert bound_function() == 2
+
+
+def test_bind_bare_emits_warning(caplog):
+
+    def foo():
+        return 'bar'
+
+    ParamFunction(foo)
+
+    # Emits a Param warning
+    panel(bind(foo))
+
+    found = False
+    for log_record in caplog.records:
+        if (log_record.levelname == 'WARNING' and
+           "The function 'foo' does not have any dependencies and will never update" in log_record.message):
+            found = True
+    assert found

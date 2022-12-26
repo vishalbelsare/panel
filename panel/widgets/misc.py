@@ -1,22 +1,43 @@
 """
 Miscellaneous widgets which do not fit into the other main categories.
 """
+from __future__ import annotations
+
 import os
 
 from base64 import b64encode
+from typing import (
+    TYPE_CHECKING, ClassVar, Mapping, Type,
+)
 
 import param
+
+from pyviz_comms import JupyterComm
 
 from ..io.notebook import push
 from ..io.state import state
 from ..models import (
-    VideoStream as _BkVideoStream, FileDownload as _BkFileDownload
+    FileDownload as _BkFileDownload, VideoStream as _BkVideoStream,
 )
+from ..util import lazy_load
 from .base import Widget
-from .indicators import Progress # noqa
+from .indicators import Progress  # noqa
+
+if TYPE_CHECKING:
+    from bokeh.model import Model
 
 
 class VideoStream(Widget):
+    """
+    The `VideoStream` displays a video from a local stream (for example from a webcam) and allows
+    accessing the streamed video data from Python.
+
+    Reference: https://panel.holoviz.org/reference/widgets/VideoStream.html
+
+    :Example:
+
+    >>> VideoStream(name='Video Stream', timeout=100)
+    """
 
     format = param.ObjectSelector(default='png', objects=['png', 'jpeg'],
                                   doc="""
@@ -31,9 +52,9 @@ class VideoStream(Widget):
     value = param.String(default='', doc="""
         A base64 representation of the video stream snapshot.""")
 
-    _widget_type = _BkVideoStream
+    _widget_type: ClassVar[Type[Model]] = _BkVideoStream
 
-    _rename = {'name': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {'name': None}
 
     def snapshot(self):
         """
@@ -48,6 +69,18 @@ class VideoStream(Widget):
 
 
 class FileDownload(Widget):
+    """
+    The `FileDownload` widget allows a user to download a file.
+
+    It works either by sending the file data to the browser on initialization
+    (`embed`=True), or when the button is clicked.
+
+    Reference: https://panel.holoviz.org/reference/widgets/FileDownload.html
+
+    :Example:
+
+    >>> FileDownload(file='IntroductionToPanel.ipynb', filename='intro.ipynb')
+    """
 
     auto = param.Boolean(default=True, doc="""
         Whether to download on the initial click or allow for
@@ -102,12 +135,12 @@ class FileDownload(Widget):
         }
     }
 
-    _widget_type = _BkFileDownload
-
-    _rename = {
+    _rename: ClassVar[Mapping[str, str | None]] = {
         'callback': None, 'embed': None, 'file': None,
         '_clicks': 'clicks', 'name': 'title'
     }
+
+    _widget_type: ClassVar[Type[Model]] = _BkFileDownload
 
     def __init__(self, file=None, **params):
         self._default_label = 'label' not in params
@@ -197,3 +230,74 @@ class FileDownload(Widget):
         self.param.update(data=data, filename=filename)
         self._update_label()
         self._transfers += 1
+
+
+
+class JSONEditor(Widget):
+    """
+    The `JSONEditor` provides a visual editor for JSON-serializable
+    datastructures, e.g. Python dictionaries and lists, with functionality for
+    different editing modes, inserting objects and validation using JSON
+    Schema.
+
+    Reference: https://panel.holoviz.org/reference/widgets/JSONEditor.html
+
+    :Example:
+
+    >>> JSONEditor(value={
+    ...     'dict'  : {'key': 'value'},
+    ...     'float' : 3.14,
+    ...     'int'   : 1,
+    ...     'list'  : [1, 2, 3],
+    ...     'string': 'A string',
+    ... }, mode='code')
+    """
+
+    menu = param.Boolean(default=True, doc="""
+        Adds main menu bar - Contains format, sort, transform, search
+        etc. functionality. true by default. Applicable in all types
+        of mode.""")
+
+    mode = param.Selector(default='tree', objects=[
+        "tree", "view", "form", "code", "text", "preview"], doc="""
+        Sets the editor mode. In 'view' mode, the data and
+        datastructure is read-only. In 'form' mode, only the value can
+        be changed, the data structure is read-only. Mode 'code'
+        requires the Ace editor to be loaded on the page. Mode 'text'
+        shows the data as plain text. The 'preview' mode can handle
+        large JSON documents up to 500 MiB. It shows a preview of the
+        data, and allows to transform, sort, filter, format, or
+        compact the data.""")
+
+    search = param.Boolean(default=True, doc="""
+        Enables a search box in the upper right corner of the
+        JSONEditor. true by default. Only applicable when mode is
+        'tree', 'view', or 'form'.""")
+
+    selection = param.List(default=[], doc="""
+        Current selection.""")
+
+    schema = param.Dict(default=None, doc="""
+        Validate the JSON object against a JSON schema. A JSON schema
+        describes the structure that a JSON object must have, like
+        required properties or the type that a value must have.
+
+        See http://json-schema.org/ for more information.""")
+
+    templates = param.List(doc="""
+        Array of templates that will appear in the context menu, Each
+        template is a json object precreated that can be added as a
+        object value to any node in your document.""")
+
+    value = param.Parameter(default={}, doc="""
+        JSON data to be edited.""")
+
+    _rename: ClassVar[Mapping[str, str | None]] = {'value': 'data'}
+
+    def _get_model(self, doc, root=None, parent=None, comm=None):
+        if self._widget_type is None:
+            self._widget_type = lazy_load(
+                "panel.models.jsoneditor", "JSONEditor", isinstance(comm, JupyterComm)
+            )
+        model = super()._get_model(doc, root, parent, comm)
+        return model

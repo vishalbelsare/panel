@@ -1,23 +1,27 @@
+import base64
 import codecs
 import json
 import logging
 import os
-import pkg_resources
 import re
+import urllib.parse as urlparse
 import uuid
 
-from urllib.parse import urlencode
+from typing import List, Tuple, Type
 
+import pkg_resources
 import tornado
 
 from bokeh.server.auth_provider import AuthProvider
 from tornado.auth import OAuth2Mixin
-from tornado.httpclient import HTTPRequest, HTTPError
+from tornado.httpclient import HTTPError, HTTPRequest
 from tornado.httputil import url_concat
+from tornado.web import RequestHandler
 
 from .config import config
 from .io import state
-from .util import base64url_encode, base64url_decode
+from .io.resources import ERROR_TEMPLATE, _env
+from .util import base64url_decode, base64url_encode
 
 log = logging.getLogger(__name__)
 
@@ -56,19 +60,33 @@ def decode_id_token(id_token):
     return json.loads(base64url_decode(payload_segment).decode('utf-8'))
 
 
-def extract_urlparam(name, urlparam):
+def extract_urlparam(args, key):
     """
-    Attempts to extract a url parameter embedded in another URL
-    parameter.
+    Extracts a request argument from a urllib.parse.parse_qs dict.
     """
-    if urlparam is None:
-        return None
-    query = name+'='
-    if query in urlparam:
-        split_args = urlparam[urlparam.index(query):].replace(query, '').split('&')
-        return split_args[0] if split_args else None
-    else:
-        return None
+    return args.get(key, args.get(f'/?{key}', [None]))[0]
+
+
+def _serialize_state(state):
+    """Serialize OAuth state to a base64 string after passing through JSON"""
+    json_state = json.dumps(state)
+    return base64.urlsafe_b64encode(json_state.encode('utf8')).decode('ascii')
+
+
+def _deserialize_state(b64_state):
+    """Deserialize OAuth state as serialized in _serialize_state"""
+    if isinstance(b64_state, str):
+        b64_state = b64_state.encode('ascii')
+    try:
+        json_state = base64.urlsafe_b64decode(b64_state).decode('utf8')
+    except ValueError:
+        log.error("Failed to b64-decode state: %r", b64_state)
+        return {}
+    try:
+        return json.loads(json_state)
+    except ValueError:
+        log.error("Failed to json-decode state: %r", json_state)
+        return {}
 
 
 class OAuthLoginHandler(tornado.web.RequestHandler):
@@ -85,6 +103,8 @@ class OAuthLoginHandler(tornado.web.RequestHandler):
     _SCOPE = None
 
     _state_cookie = None
+
+    _error_template = ERROR_TEMPLATE
 
     async def get_authenticated_user(self, redirect_uri, client_id, state,
                                      client_secret=None, code=None):
@@ -151,7 +171,6 @@ class OAuthLoginHandler(tornado.web.RequestHandler):
             raise ValueError('The client secret is undefined.')
 
         log.debug("%s making access token request.", type(self).__name__)
-
         params = {
             'code':          code,
             'redirect_uri':  redirect_uri,
@@ -166,7 +185,7 @@ class OAuthLoginHandler(tornado.web.RequestHandler):
         req = HTTPRequest(
             self._OAUTH_ACCESS_TOKEN_URL,
             method='POST',
-            body=urlencode(params),
+            body=urlparse.urlencode(params),
             headers=self._API_BASE_HEADERS
         )
         try:
@@ -198,7 +217,7 @@ class OAuthLoginHandler(tornado.web.RequestHandler):
             return
 
         log.debug("%s received user information.", type(self).__name__)
-        return self._on_auth(user, body['access_token'])
+        return self._on_auth(user, body['access_token'], body.get('refresh_token'))
 
     def get_state_cookie(self):
         """Get OAuth state from cookies
@@ -216,6 +235,25 @@ class OAuthLoginHandler(tornado.web.RequestHandler):
             STATE_COOKIE_NAME, state, expires_days=config.oauth_expiry, httponly=True
         )
 
+    def get_state(self):
+        next_url = original_next_url = self.get_argument('next', None)
+        if next_url:
+            # avoid browsers treating \ as /
+            next_url = next_url.replace('\\', urlparse.quote('\\'))
+            # disallow hostname-having urls,
+            # force absolute path redirect
+            urlinfo = urlparse.urlparse(next_url)
+            next_url = urlinfo._replace(
+                scheme='', netloc='', path='/' + urlinfo.path.lstrip('/')
+            ).geturl()
+            if next_url != original_next_url:
+                log.warning(
+                    "Ignoring next_url %r, using %r", original_next_url, next_url
+                )
+        return _serialize_state(
+            {'state_id': uuid.uuid4().hex, 'next_url': next_url}
+        )
+
     async def get(self):
         log.debug("%s received login request", type(self).__name__)
         if config.oauth_redirect_uri:
@@ -230,10 +268,34 @@ class OAuthLoginHandler(tornado.web.RequestHandler):
             'client_id':    config.oauth_key,
         }
         # Some OAuth2 backends do not correctly return code
-        next_arg = self.get_argument('next', None)
-        url_state = self.get_argument('state', None)
-        code = self.get_argument('code', extract_urlparam('code', next_arg))
-        url_state = self.get_argument('state', extract_urlparam('state', next_arg))
+        next_arg = self.get_argument('next', {})
+        if next_arg:
+            next_arg = urlparse.parse_qs(next_arg)
+            next_arg = {arg.split('?')[-1]: value for arg, value in next_arg.items()}
+        code = self.get_argument('code', extract_urlparam(next_arg, 'code'))
+        url_state = self.get_argument('state', extract_urlparam(next_arg, 'state'))
+
+        # Handle authentication error
+        error = self.get_argument('error', extract_urlparam(next_arg, 'error'))
+
+        if error is not None:
+            error_msg = self.get_argument(
+                'error_description', extract_urlparam(next_arg, 'error_description'))
+            if not error_msg:
+                error_msg = error
+            log.error(
+                "%s failed to authenticate with following error: %s",
+                type(self).__name__, error
+            )
+            self.set_header("Content-Type", 'text/html')
+            self.write(self._error_template.render(
+                npm_cdn=config.npm_cdn,
+                title='Panel: Authentication Error',
+                error_type='Authentication Error',
+                error=error,
+                error_msg=error_msg
+            ))
+            return
 
         # Seek the authorization
         cookie_state = self.get_state_cookie()
@@ -242,6 +304,7 @@ class OAuthLoginHandler(tornado.web.RequestHandler):
                 log.warning("OAuth state mismatch: %s != %s", cookie_state, url_state)
                 raise HTTPError(400, "OAuth state mismatch")
 
+            state = _deserialize_state(url_state)
             # For security reason, the state value (cross-site token) will be
             # retrieved from the query string.
             params.update({
@@ -253,15 +316,14 @@ class OAuthLoginHandler(tornado.web.RequestHandler):
             if user is None:
                 raise HTTPError(403)
             log.debug("%s authorized user, redirecting to app.", type(self).__name__)
-            self.redirect('/')
+            self.redirect(state.get('next_url', '/'))
         else:
             # Redirect for user authentication
-            state = uuid.uuid4().hex
-            params['state'] = state
+            params['state'] = state = self.get_state()
             self.set_state_cookie(state)
             await self.get_authenticated_user(**params)
 
-    def _on_auth(self, user_info, access_token):
+    def _on_auth(self, user_info, access_token, refresh_token=None):
         user_key = config.oauth_jwt_user or self._USER_KEY
         user = user_info[user_key]
         self.set_secure_cookie('user', user, expires_days=config.oauth_expiry)
@@ -269,8 +331,12 @@ class OAuthLoginHandler(tornado.web.RequestHandler):
         if state.encryption:
             access_token = state.encryption.encrypt(access_token.encode('utf-8'))
             id_token = state.encryption.encrypt(id_token.encode('utf-8'))
+            if refresh_token:
+                refresh_token = state.encryption.encrypt(refresh_token.encode('utf-8'))
         self.set_secure_cookie('access_token', access_token, expires_days=config.oauth_expiry)
         self.set_secure_cookie('id_token', id_token, expires_days=config.oauth_expiry)
+        if refresh_token:
+            self.set_secure_cookie('refresh_token', refresh_token, expires_days=config.oauth_expiry)
         return user
 
     def _on_error(self, response, body=None):
@@ -287,7 +353,7 @@ class OAuthLoginHandler(tornado.web.RequestHandler):
             log.warning(f"{provider} OAuth provider failed to fully "
                         f"authenticate returning the following response:"
                         f"{body}.")
-        raise HTTPError(500, f"{provider} authentication failed")
+        raise HTTPError(500, f"{provider} authentication failed {body}")
 
 
 class GenericLoginHandler(OAuthLoginHandler, OAuth2Mixin):
@@ -298,23 +364,27 @@ class GenericLoginHandler(OAuthLoginHandler, OAuth2Mixin):
         'grant_type':    'authorization_code'
     }
 
-    _SCOPE = ['openid', 'email']
-
     @property
     def _OAUTH_ACCESS_TOKEN_URL(self):
-        return config.oauth_extra_params['TOKEN_URL']
+        return config.oauth_extra_params.get('TOKEN_URL', os.environ.get('PANEL_OAUTH_TOKEN_URL'))
 
     @property
     def _OAUTH_AUTHORIZE_URL(self):
-        return config.oauth_extra_params['AUTHORIZE_URL']
+        return config.oauth_extra_params.get('AUTHORIZE_URL', os.environ.get('PANEL_OAUTH_AUTHORIZE_URL'))
 
     @property
     def _OAUTH_USER_URL(self):
-        return config.oauth_extra_params['USER_URL']
+        return config.oauth_extra_params.get('USER_URL', os.environ.get('PANEL_OAUTH_USER_URL'))
+
+    @property
+    def _SCOPE(self):
+        if 'PANEL_OAUTH_SCOPE' not in os.environ:
+            return ['openid', 'email']
+        return [scope for scope in os.environ['PANEL_OAUTH_SCOPE'].split(',')]
 
     @property
     def _USER_KEY(self):
-        return config.oauth_extra_params.get('USER_KEY', 'email')
+        return config.oauth_extra_params.get('USER_KEY', os.environ.get('PANEL_USER_KEY', 'email'))
 
 
 class GithubLoginHandler(OAuthLoginHandler, OAuth2Mixin):
@@ -537,7 +607,7 @@ class OAuthIDTokenLoginHandler(OAuthLoginHandler):
             **self._EXTRA_AUTHORIZE_PARAMS
         }
 
-        data = urlencode(
+        data = urlparse.urlencode(
             params, doseq=True, encoding='utf-8', safe='=')
 
         # Request the access token.
@@ -562,9 +632,9 @@ class OAuthIDTokenLoginHandler(OAuthLoginHandler):
 
         access_token = body['access_token']
         id_token = body['id_token']
-        return self._on_auth(id_token, access_token)
+        return self._on_auth(id_token, access_token, body.get('refresh_token'))
 
-    def _on_auth(self, id_token, access_token):
+    def _on_auth(self, id_token, access_token, refresh_token=None):
         decoded = decode_id_token(id_token)
         user_key = config.oauth_jwt_user or self._USER_KEY
         if user_key in decoded:
@@ -577,8 +647,12 @@ class OAuthIDTokenLoginHandler(OAuthLoginHandler):
         if state.encryption:
             access_token = state.encryption.encrypt(access_token.encode('utf-8'))
             id_token = state.encryption.encrypt(id_token.encode('utf-8'))
+            if refresh_token:
+                refresh_token = state.encryption.encrypt(refresh_token.encode('utf-8'))
         self.set_secure_cookie('access_token', access_token, expires_days=config.oauth_expiry)
         self.set_secure_cookie('id_token', id_token, expires_days=config.oauth_expiry)
+        if refresh_token:
+            self.set_secure_cookie('refresh_token', refresh_token, expires_days=config.oauth_expiry)
         return user
 
 
@@ -594,6 +668,35 @@ class AzureAdLoginHandler(OAuthIDTokenLoginHandler, OAuth2Mixin):
     _OAUTH_USER_URL_ = ''
 
     _USER_KEY = 'unique_name'
+
+    @property
+    def _OAUTH_ACCESS_TOKEN_URL(self):
+        tenant = os.environ.get('AAD_TENANT_ID', config.oauth_extra_params.get('tenant', 'common'))
+        return self._OAUTH_ACCESS_TOKEN_URL_.format(tenant=tenant)
+
+    @property
+    def _OAUTH_AUTHORIZE_URL(self):
+        tenant = os.environ.get('AAD_TENANT_ID', config.oauth_extra_params.get('tenant', 'common'))
+        return self._OAUTH_AUTHORIZE_URL_.format(tenant=tenant)
+
+    @property
+    def _OAUTH_USER_URL(self):
+        return self._OAUTH_USER_URL_.format(**config.oauth_extra_params)
+
+
+class AzureAdV2LoginHandler(OAuthIDTokenLoginHandler, OAuth2Mixin):
+
+    _API_BASE_HEADERS = {
+        'Accept': 'application/json',
+        'User-Agent': 'Tornado OAuth'
+    }
+
+    _OAUTH_ACCESS_TOKEN_URL_ = 'https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token'
+    _OAUTH_AUTHORIZE_URL_ = 'https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize'
+    _OAUTH_USER_URL_ = ''
+
+    _USER_KEY = 'email'
+    _SCOPE = ['openid', 'email', 'profile']
 
     @property
     def _OAUTH_ACCESS_TOKEN_URL(self):
@@ -687,6 +790,14 @@ class LogoutHandler(tornado.web.RequestHandler):
 
 class OAuthProvider(AuthProvider):
 
+    def __init__(self, error_template=None):
+        if error_template is None:
+            self._error_template = ERROR_TEMPLATE
+        else:
+            with open(error_template) as f:
+                self._error_template = _env.from_string(f.read())
+        super().__init__()
+
     @property
     def get_user(self):
         def get_user(request_handler):
@@ -694,12 +805,32 @@ class OAuthProvider(AuthProvider):
         return get_user
 
     @property
+    def endpoints(self) -> List[Tuple[str, Type[RequestHandler]]]:
+        ''' URL patterns for login/logout endpoints.
+
+        '''
+        endpoints: List[Tuple[str, Type[RequestHandler]]] = []
+        if self.login_handler:
+            assert self.login_url is not None
+            endpoints.append(('/login', self.login_handler))
+        if self.logout_handler:
+            assert self.logout_url is not None
+            endpoints.append(('/logout', self.logout_handler))
+        return endpoints
+
+    @property
     def login_url(self):
-        return '/login'
+        if config.oauth_redirect_uri is None:
+            return '/login'
+        else:
+            return urlparse.urlparse(config.oauth_redirect_uri).path + '/login'
 
     @property
     def login_handler(self):
-        return AUTH_PROVIDERS[config.oauth_provider]
+        handler = AUTH_PROVIDERS[config.oauth_provider]
+        if self._error_template:
+            handler._error_template = self._error_template
+        return handler
 
     @property
     def logout_url(self):
@@ -713,6 +844,7 @@ class OAuthProvider(AuthProvider):
 AUTH_PROVIDERS = {
     'auth0': Auth0Handler,
     'azure': AzureAdLoginHandler,
+    'azurev2': AzureAdV2LoginHandler,
     'bitbucket': BitbucketLoginHandler,
     'generic': GenericLoginHandler,
     'google': GoogleLoginHandler,

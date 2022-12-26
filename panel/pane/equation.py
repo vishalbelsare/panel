@@ -2,9 +2,11 @@
 Renders objects representing equations including LaTeX strings and
 SymPy objects.
 """
+from __future__ import annotations
+
 import sys
 
-from six import string_types
+from typing import Any, ClassVar, Mapping
 
 import param
 
@@ -24,21 +26,38 @@ def is_sympy_expr(obj):
 
 
 class LaTeX(DivPaneBase):
+    """
+    The `LaTeX` pane allows rendering LaTeX equations. It uses either
+    `MathJax` or `KaTeX` depending on the defined renderer.
+
+    By default it will use the renderer loaded in the extension
+    (e.g. `pn.extension('katex')`), defaulting to `KaTeX`.
+
+    Reference: https://panel.holoviz.org/reference/panes/LaTeX.html
+
+    :Example:
+
+    >>> pn.extension('katex')
+    >>> LaTeX(
+    ...     'The LaTeX pane supports two delimiters: $LaTeX$ and \(LaTeX\)',
+    ...     style={'font-size': '18pt'}, width=800
+    ... )
+    """
 
     renderer = param.ObjectSelector(default=None, allow_None=True,
                                     objects=['katex', 'mathjax'], doc="""
         The JS renderer used to render the LaTeX expression.""")
 
     # Priority is dependent on the data type
-    priority = None
+    priority: ClassVar[float | bool | None] = None
 
-    _rename = {"renderer": None}
+    _rename: ClassVar[Mapping[str, str | None]] = {"renderer": None}
 
     @classmethod
-    def applies(cls, obj):
+    def applies(cls, obj: Any) -> float | bool | None:
         if is_sympy_expr(obj) or hasattr(obj, '_repr_latex_'):
             return 0.05
-        elif isinstance(obj, string_types):
+        elif isinstance(obj, str):
             return None
         else:
             return False

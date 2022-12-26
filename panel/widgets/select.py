@@ -2,26 +2,35 @@
 Defines various Select widgets which allow choosing one or more items
 from a list of options.
 """
+from __future__ import annotations
+
+import itertools
 import re
 
 from collections import OrderedDict
-import itertools
+from typing import (
+    TYPE_CHECKING, ClassVar, Mapping, Type,
+)
 
 import param
 
 from bokeh.models.widgets import (
-    AutocompleteInput as _BkAutocompleteInput, CheckboxGroup as _BkCheckboxGroup,
-    CheckboxButtonGroup as _BkCheckboxButtonGroup, MultiSelect as _BkMultiSelect,
-    RadioButtonGroup as _BkRadioButtonGroup, RadioGroup as _BkRadioBoxGroup,
-    Select as _BkSelect, MultiChoice as _BkMultiChoice
+    AutocompleteInput as _BkAutocompleteInput,
+    CheckboxButtonGroup as _BkCheckboxButtonGroup,
+    CheckboxGroup as _BkCheckboxGroup, MultiChoice as _BkMultiChoice,
+    MultiSelect as _BkMultiSelect, RadioButtonGroup as _BkRadioButtonGroup,
+    RadioGroup as _BkRadioBoxGroup,
 )
 
 from ..layout import Column, VSpacer
-from ..models import SingleSelect as _BkSingleSelect
-from ..util import as_unicode, isIn, indexOf
-from .base import Widget, CompositeWidget
-from .button import _ButtonBase, Button
-from .input import TextInput, TextAreaInput
+from ..models import CustomSelect, SingleSelect as _BkSingleSelect
+from ..util import PARAM_NAME_PATTERN, indexOf, isIn
+from .base import CompositeWidget, Widget
+from .button import Button, _ButtonBase
+from .input import TextAreaInput, TextInput
+
+if TYPE_CHECKING:
+    from bokeh.model import Model
 
 
 class SelectBase(Widget):
@@ -32,7 +41,13 @@ class SelectBase(Widget):
 
     @property
     def labels(self):
-        return [as_unicode(o) for o in self.options]
+        labels = []
+        for o in self.options:
+            if isinstance(o, param.Parameterized) and not PARAM_NAME_PATTERN.match(o.name):
+                labels.append(o.name)
+            else:
+                labels.append(str(o))
+        return labels
 
     @property
     def values(self):
@@ -51,7 +66,7 @@ class SingleSelectBase(SelectBase):
 
     value = param.Parameter(default=None)
 
-    _supports_embed = True
+    _supports_embed: ClassVar[bool] = True
 
     __abstract = True
 
@@ -95,7 +110,7 @@ class SingleSelectBase(SelectBase):
 
     @property
     def unicode_values(self):
-        return [as_unicode(v) for v in self.values]
+        return [str(v) for v in self.values]
 
     def _process_property_change(self, msg):
         msg = super()._process_property_change(msg)
@@ -125,36 +140,105 @@ class SingleSelectBase(SelectBase):
 
 
 class Select(SingleSelectBase):
+    """
+    The `Select` widget allows selecting a value from a list or dictionary of
+    `options` by selecting it from a dropdown menu or selection area.
+
+    It falls into the broad category of single-value, option-selection widgets
+    that provide a compatible API and include the `RadioBoxGroup`,
+    `AutocompleteInput` and `DiscreteSlider` widgets.
+
+    Reference: https://panel.holoviz.org/reference/widgets/Select.html
+
+    :Example:
+
+    >>> Select(name='Study', options=['Biology', 'Chemistry', 'Physics'])
+    """
+
+    disabled_options = param.List(default=[], doc="""
+        Optional list of ``options`` that are disabled, i.e. unusable and
+        un-clickable. If ``options`` is a dictionary the list items must be
+        dictionary values.""")
+
+    groups = param.Dict(default=None, doc="""
+        Dictionary whose keys are used to visually group the options
+        and whose values are either a list or a dictionary of options
+        to select from. Mutually exclusive with ``options``  and valid only
+        if ``size`` is 1.""")
 
     size = param.Integer(default=1, bounds=(1, None), doc="""
         Declares how many options are displayed at the same time.
         If set to 1 displays options as dropdown otherwise displays
         scrollable area.""")
-    
-    groups = param.Dict(default=None, doc="""
-        Dictionary whose keys are used to visually group the options
-        and whose values are either a list or a dictionary of options
-        to select from. Mutually exclusive with ``options``.""")
 
-    _source_transforms = {'size': None, 'groups': None}
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {
+        'size': None, 'groups': None
+    }
 
     @property
     def _widget_type(self):
-        return _BkSelect if self.size == 1 else _BkSingleSelect
+        return CustomSelect if self.size == 1 else _BkSingleSelect
 
     def __init__(self, **params):
         super().__init__(**params)
         if self.size == 1:
             self.param.size.constant = True
-        watcher = self.param.watch(self._validate_options_groups, ['options', 'groups'])
-        self._callbacks.append(watcher)
+        self._callbacks.extend([
+            self.param.watch(
+                self._validate_options_groups,
+                ['options', 'groups']
+            ),
+            self.param.watch(
+                self._validate_disabled_options,
+                ['options', 'disabled_options', 'value']
+            ),
+        ])
         self._validate_options_groups()
+        self._validate_disabled_options()
+
+    def _validate_disabled_options(self, *events):
+        if self.disabled_options and self.disabled_options == self.values:
+            raise ValueError(
+                f'All the options of a {type(self).__name__} '
+                'widget cannot be disabled.'
+            )
+        not_in_opts = [
+            dopts
+            for dopts in self.disabled_options
+            if dopts not in (self.values or [])
+        ]
+        if not_in_opts:
+            raise ValueError(
+                f'Cannot disable non existing options of {type(self).__name__}: {not_in_opts}'
+            )
+        if len(events) == 1:
+            if events[0].name == 'value' and self.value in self.disabled_options:
+                raise ValueError(
+                    f'Cannot set the value of {type(self).__name__} to '
+                    f'{self.value!r} as it is a disabled option.'
+                )
+            elif events[0].name == 'disabled_options' and self.value in self.disabled_options:
+                raise ValueError(
+                    f'Cannot set disabled_options of {type(self).__name__} to a list that '
+                    f'includes the current value {self.value!r}.'
+                )
+        if self.value in self.disabled_options:
+            raise ValueError(
+                f'Cannot initialize {type(self).__name__} with value {self.value!r} '
+                'as it is one of the disabled options.'
+            )
+
 
     def _validate_options_groups(self, *events):
         if self.options and self.groups:
             raise ValueError(
                 f'{type(self).__name__} options and groups parameters '
                 'are mutually exclusive.'
+            )
+        if self.size > 1 and self.groups:
+            raise ValueError(
+                f'{type(self).__name__} with size > 1 doe not support the'
+                ' `groups` parameter, use `options` instead.'
             )
 
     def _process_param_change(self, msg):
@@ -175,18 +259,18 @@ class Select(SingleSelectBase):
                 if isinstance(next(iter(self.groups.values())), dict):
                     if unique:
                         options = {
-                            group: [(as_unicode(value), label) for label, value in subd.items()]
+                            group: [(str(value), label) for label, value in subd.items()]
                             for group, subd in groups.items()
                         }
                     else:
                         options = {
-                            group: [as_unicode(v) for v in self.groups[group]]
+                            group: [str(v) for v in self.groups[group]]
                             for group in groups.keys()
                         }
                     msg['options'] = options
                 else:
                     msg['options'] = {
-                        group: [(as_unicode(value), as_unicode(value)) for value in values]
+                        group: [(str(value), str(value)) for value in values]
                         for group, values in groups.items()
                     }
             val = self.value
@@ -205,7 +289,7 @@ class Select(SingleSelectBase):
             if not self.groups:
                 return {}
             else:
-                return list(map(as_unicode, itertools.chain(*self.groups.values())))
+                return list(map(str, itertools.chain(*self.groups.values())))
 
     @property
     def values(self):
@@ -224,7 +308,7 @@ class _MultiSelectBase(SingleSelectBase):
 
     value = param.List(default=[])
 
-    _supports_embed = False
+    _supports_embed: ClassVar[bool] = False
 
     def _process_param_change(self, msg):
         msg = super(SingleSelectBase, self)._process_param_change(msg)
@@ -250,15 +334,53 @@ class _MultiSelectBase(SingleSelectBase):
 
 
 class MultiSelect(_MultiSelectBase):
+    """
+    The `MultiSelect` widget allows selecting multiple values from a list of
+    `options`.
+
+    It falls into the broad category of multi-value, option-selection widgets
+    that provide a compatible API and include the`CrossSelector`,
+    `CheckBoxGroup` and `CheckButtonGroup` widgets.
+
+    Reference: https://panel.holoviz.org/reference/widgets/MultiSelect.html
+
+    :Example:
+
+    >>> MultiSelect(
+    ...     name='Frameworks', value=['Bokeh', 'Panel'],
+    ...     options=['Bokeh', 'Dash', 'Panel', 'Streamlit', 'Voila'], size=8
+    ... )
+    """
 
     size = param.Integer(default=4, doc="""
         The number of items displayed at once (i.e. determines the
         widget height).""")
 
-    _widget_type = _BkMultiSelect
+    _widget_type: ClassVar[Type[Model]] = _BkMultiSelect
 
 
 class MultiChoice(_MultiSelectBase):
+    """
+    The `MultiChoice` widget allows selecting multiple values from a list of
+    `options`.
+
+    It falls into the broad category of multi-value, option-selection widgets
+    that provide a compatible API and include the `MultiSelect`,
+    `CrossSelector`, `CheckBoxGroup` and `CheckButtonGroup` widgets.
+
+    The `MultiChoice` widget provides a much more compact UI than
+    `MultiSelect`.
+
+    Reference: https://panel.holoviz.org/reference/widgets/MultiChoice.html
+
+    :Example:
+
+    >>> MultiChoice(
+    ...     name='Favourites', value=['Panel', 'hvPlot'],
+    ...     options=['Panel', 'hvPlot', 'HoloViews', 'GeoViews', 'Datashader', 'Param', 'Colorcet'],
+    ...     max_items=2
+    ... )
+    """
 
     delete_button = param.Boolean(default=True, doc="""
         Whether to display a button to delete a selected option.""")
@@ -268,23 +390,40 @@ class MultiChoice(_MultiSelectBase):
 
     option_limit = param.Integer(default=None, bounds=(1, None), doc="""
         Maximum number of options to display at once.""")
-    
+
     search_option_limit = param.Integer(default=None, bounds=(1, None), doc="""
         Maximum number of options to display at once if search string is entered.""")
-    
+
     placeholder = param.String(default='', doc="""
         String displayed when no selection has been made.""")
 
     solid = param.Boolean(default=True, doc="""
         Whether to display widget with solid or light style.""")
 
-    _widget_type = _BkMultiChoice
-
-
-_AutocompleteInput_rename = {'name': 'title', 'options': 'completions'}
+    _widget_type: ClassVar[Type[Model]] = _BkMultiChoice
 
 
 class AutocompleteInput(Widget):
+    """
+    The `MultiChoice` widget allows selecting multiple values from a list of
+    `options`.
+
+    It falls into the broad category of multi-value, option-selection widgets
+    that provide a compatible API and include the `MultiSelect`,
+    `CrossSelector`, `CheckBoxGroup` and `CheckButtonGroup` widgets.
+
+    The `MultiChoice` widget provides a much more compact UI than
+    `MultiSelect`.
+
+    Reference: https://panel.holoviz.org/reference/widgets/AutocompleteInput.html
+
+    :Example:
+
+    >>> AutocompleteInput(
+    ...     name='Study', options=['Biology', 'Chemistry', 'Physics'],
+    ...     placeholder='Write your study here ...'
+    ... )
+    """
 
     case_sensitive = param.Boolean(default=True, doc="""
         Enable or disable case sensitivity.""")
@@ -310,9 +449,9 @@ class AutocompleteInput(Widget):
     value_input = param.String(default='', allow_None=True, doc="""
       Initial or entered text value updated on every key press.""")
 
-    _widget_type = _BkAutocompleteInput
+    _rename: ClassVar[Mapping[str, str | None]] = {'name': 'title', 'options': 'completions'}
 
-    _rename = _AutocompleteInput_rename
+    _widget_type: ClassVar[Type[Model]] = _BkAutocompleteInput
 
     def _process_param_change(self, msg):
         msg = super()._process_param_change(msg)
@@ -326,7 +465,7 @@ class _RadioGroupBase(SingleSelectBase):
 
     _supports_embed = False
 
-    _rename = {'name': None, 'options': 'labels', 'value': 'active'}
+    _rename: ClassVar[Mapping[str, str | None]] = {'name': None, 'options': 'labels', 'value': 'active'}
 
     _source_transforms = {'value': "source.labels[value]"}
 
@@ -376,22 +515,59 @@ class _RadioGroupBase(SingleSelectBase):
 
 
 class RadioButtonGroup(_RadioGroupBase, _ButtonBase):
+    """
+    The `RadioButtonGroup` widget allows selecting from a list or dictionary
+    of values using a set of toggle buttons.
 
-    _widget_type = _BkRadioButtonGroup
+    It falls into the broad category of single-value, option-selection widgets
+    that provide a compatible API and include the `RadioBoxGroup`, `Select`,
+    and `DiscreteSlider` widgets.
 
-    _supports_embed = True
+    Reference: https://panel.holoviz.org/reference/widgets/RadioButtonGroup.html
+
+    :Example:
+
+    >>> RadioButtonGroup(
+    ...     name='Plotting library', options=['Matplotlib', 'Bokeh', 'Plotly'],
+    ...     button_type='success'
+    ... )
+    """
+
+    orientation = param.Selector(default='horizontal',
+        objects=['horizontal', 'vertical'], doc="""
+        Button group orientation, either 'horizontal' (default) or 'vertical'.""")
+
+    _supports_embed: ClassVar[bool] = True
+
+    _widget_type: ClassVar[Type[Model]] = _BkRadioButtonGroup
 
 
 
 class RadioBoxGroup(_RadioGroupBase):
+    """
+    The `RadioBoxGroup` widget allows selecting from a list or dictionary of
+    values using a set of checkboxes.
+
+    It falls into the broad category of single-value, option-selection widgets
+    that provide a compatible API and include the `RadioButtonGroup`, `Select`
+    and `DiscreteSlider` widgets.
+
+    Reference: https://panel.holoviz.org/reference/widgets/RadioBoxGroup.html
+
+    :Example:
+
+    >>> RadioBoxGroup(
+    ...     name='Sponsor', options=['Anaconda', 'Blackstone'], inline=True
+    ... )
+    """
 
     inline = param.Boolean(default=False, doc="""
         Whether the items be arrange vertically (``False``) or
         horizontally in-line (``True``).""")
 
-    _supports_embed = True
+    _supports_embed: ClassVar[bool] = True
 
-    _widget_type = _BkRadioBoxGroup
+    _widget_type: ClassVar[Type[Model]] = _BkRadioBoxGroup
 
 
 
@@ -399,7 +575,7 @@ class _CheckGroupBase(SingleSelectBase):
 
     value = param.List(default=[])
 
-    _rename = {'name': None, 'options': 'labels', 'value': 'active'}
+    _rename: ClassVar[Mapping[str, str | None]] = {'name': None, 'options': 'labels', 'value': 'active'}
 
     _source_transforms = {'value': "value.map((index) => source.labels[index])"}
 
@@ -410,7 +586,7 @@ class _CheckGroupBase(SingleSelectBase):
     __abstract = True
 
     def _process_param_change(self, msg):
-        msg = super(SingleSelectBase, self)._process_param_change(msg)
+        msg = super()._process_param_change(msg)
         values = self.values
         if 'active' in msg:
             msg['active'] = [indexOf(v, values) for v in msg['active']
@@ -419,6 +595,8 @@ class _CheckGroupBase(SingleSelectBase):
             msg['labels'] = self.labels
             if any(not isIn(v, values) for v in self.value):
                 self.value = [v for v in self.value if isIn(v, values)]
+            msg["active"] = [indexOf(v, values) for v in self.value
+                             if isIn(v, values)]
         msg.pop('title', None)
         return msg
 
@@ -432,17 +610,55 @@ class _CheckGroupBase(SingleSelectBase):
 
 
 class CheckButtonGroup(_CheckGroupBase, _ButtonBase):
+    """
+    The `CheckButtonGroup` widget allows selecting between a list of options
+    by toggling the corresponding buttons.
 
-    _widget_type = _BkCheckboxButtonGroup
+    It falls into the broad category of multi-option selection widgets that
+    provide a compatible API and include the `MultiSelect`, `CrossSelector`
+    and `CheckBoxGroup` widgets.
+
+    Reference: https://panel.holoviz.org/reference/widgets/CheckButtonGroup.html
+
+    :Example:
+
+    >>> CheckButtonGroup(
+    ...     name='Regression Models', value=['Lasso', 'Ridge'],
+    ...     options=['Lasso', 'Linear', 'Ridge', 'Polynomial']
+    ... )
+    """
+
+    orientation = param.Selector(default='horizontal',
+        objects=['horizontal', 'vertical'], doc="""
+        Button group orientation, either 'horizontal' (default) or 'vertical'.""")
+
+    _widget_type: ClassVar[Type[Model]] = _BkCheckboxButtonGroup
 
 
 class CheckBoxGroup(_CheckGroupBase):
+    """
+    The `CheckBoxGroup` widget allows selecting between a list of options by
+    ticking the corresponding checkboxes.
+
+    It falls into the broad category of multi-option selection widgets that
+    provide a compatible API and include the `MultiSelect`, `CrossSelector`
+    and `CheckButtonGroup` widgets.
+
+    Reference: https://panel.holoviz.org/reference/widgets/CheckBoxGroup.html
+
+    :Example:
+
+    >>> CheckBoxGroup(
+    ...     name='Fruits', value=['Apple', 'Pear'], options=['Apple', 'Banana', 'Pear', 'Strawberry'],
+    ...     inline=True
+    ... )
+    """
 
     inline = param.Boolean(default=False, doc="""
         Whether the items be arrange vertically (``False``) or
         horizontally in-line (``True``).""")
 
-    _widget_type = _BkCheckboxGroup
+    _widget_type: ClassVar[Type[Model]] = _BkCheckboxGroup
 
 
 
@@ -497,6 +713,15 @@ class CrossSelector(CompositeWidget, MultiSelect):
     A composite widget which allows selecting from a list of items
     by moving them between two lists. Supports filtering values by
     name to select them in bulk.
+
+    Reference: https://panel.holoviz.org/reference/widgets/CrossSelector.html
+
+    :Example:
+
+    >>> CrossSelector(
+    ...     name='Fruits', value=['Apple', 'Pear'],
+    ...     options=['Apple', 'Banana', 'Pear', 'Strawberry']
+    ... )
     """
 
     width = param.Integer(default=600, allow_None=True, doc="""
@@ -572,6 +797,8 @@ class CrossSelector(CompositeWidget, MultiSelect):
 
         self._selections = {False: [], True: []}
         self._query = {False: '', True: ''}
+
+        self._update_disabled()
 
     @param.depends('size', watch=True)
     def _update_size(self):

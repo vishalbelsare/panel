@@ -1,16 +1,20 @@
 import sys
-
-from distutils.version import LooseVersion
+import time
 
 import numpy as np
 import pytest
 
+from packaging.version import Version
+
+from panel.io.server import serve
+
 try:
     import holoviews as hv
-    hv_version = LooseVersion(hv.__version__)
+    hv_version = Version(hv.__version__)
 except Exception:
     hv, hv_version = None, None
-hv_available = pytest.mark.skipif(hv is None or hv_version < '1.13.0a23', reason="requires holoviews")
+hv_available = pytest.mark.skipif(hv is None or hv_version < Version('1.13.0a23'),
+                                  reason="requires holoviews")
 
 try:
     import matplotlib as mpl
@@ -36,8 +40,6 @@ try:
 except Exception:
     jupyter_bokeh = None
 jb_available = pytest.mark.skipif(jupyter_bokeh is None, reason="requires jupyter_bokeh")
-
-py3_only = pytest.mark.skipif(sys.version_info.major < 3, reason="requires Python 3")
 
 from panel.pane.markup import Markdown
 
@@ -90,3 +92,90 @@ def check_layoutable_properties(layoutable, model):
 
     layoutable.height_policy = 'min'
     assert model.height_policy == 'min'
+
+
+def wait_until(fn, page=None, timeout=5000, interval=100):
+    """
+    Exercice a test function in a loop until it evaluates to True
+    or times out.
+
+    The function can either be a simple lambda that returns True or False:
+    >>> wait_until(lambda: x.values() == ['x'])
+
+    Or a defined function with an assert:
+    >>> def _()
+    >>>    assert x.values() == ['x']
+    >>> wait_until(_)
+
+    In a Playwright context test you should pass the page fixture:
+    >>> wait_until(lambda: x.values() == ['x'], page)
+
+    Parameters
+    ----------
+    fn : callable
+        Callback
+    page : playwright.sync_api.Page, optional
+        Playwright page
+    timeout : int, optional
+        Total timeout in milliseconds, by default 5000
+    interval : int, optional
+        Waiting interval, by default 100
+
+    Adapted from pytest-qt.
+    """
+    # Hide this function traceback from the pytest output if the test fails
+    __tracebackhide__ = True
+
+    start = time.time()
+
+    def timed_out():
+        elapsed = time.time() - start
+        elapsed_ms = elapsed * 1000
+        return elapsed_ms > timeout
+
+    timeout_msg = f"wait_until timed out in {timeout} milliseconds"
+
+    while True:
+        try:
+            result = fn()
+        except AssertionError as e:
+            if timed_out():
+                raise TimeoutError(timeout_msg) from e
+        else:
+            if result not in (None, True, False):
+                raise ValueError(
+                    "`wait_until` callback must return None, True or "
+                    f"False, returned {result!r}"
+                )
+            # None is returned when the function has an assert
+            if result is None:
+                return
+            # When the function returns True or False
+            if result:
+                return
+            if timed_out():
+                raise TimeoutError(timeout_msg)
+        if page:
+            # Playwright recommends against using time.sleep
+            # https://playwright.dev/python/docs/intro#timesleep-leads-to-outdated-state
+            page.wait_for_timeout(interval)
+        else:
+            time.sleep(interval / 1000)
+
+
+def get_ctrl_modifier():
+    """
+    Get the CTRL modifier on the current platform.
+    """
+    if sys.platform in ['linux', 'win32']:
+        return 'Control'
+    elif sys.platform == 'darwin':
+        return 'Meta'
+    else:
+        raise ValueError(f'No control modifier defined for platform {sys.platform}')
+
+
+def serve_panel_widget(page, port, pn_widget, sleep=0.2):
+    serve(pn_widget, port=port, threaded=True, show=False)
+    time.sleep(sleep)
+    page.goto(f"http://localhost:{port}")

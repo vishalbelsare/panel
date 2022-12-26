@@ -1,26 +1,36 @@
-# coding: utf-8
 """
 Defines a VTKPane which renders a vtk plot using VTKPlot bokeh model.
 """
-import sys
-import json
+from __future__ import annotations
+
 import base64
+import json
+import sys
 import zipfile
 
 from abc import abstractmethod
-from six import string_types
+from typing import (
+    TYPE_CHECKING, Any, ClassVar, Dict, Mapping, Optional,
+)
 from urllib.request import urlopen
 
-import param
 import numpy as np
+import param
 
-from bokeh.util.serialization import make_globally_unique_id
 from bokeh.models import LinearColorMapper
+from bokeh.util.serialization import make_globally_unique_id
 from pyviz_comms import JupyterComm
 
+from ...param import ParamMethod
 from ...util import isfile, lazy_load
-from ..base import PaneBase, Pane
+from ..base import PaneBase
+from ..plot import Bokeh
 from .enums import PRESET_CMAPS
+
+if TYPE_CHECKING:
+    from bokeh.document import Document
+    from bokeh.model import Model
+    from pyviz_comms import Comm
 
 base64encode = lambda x: base64.b64encode(x).decode('utf-8')
 
@@ -71,7 +81,10 @@ class AbstractVTK(PaneBase):
             msg['axes'] = VTKAxes(**axes)
         return msg
 
-    def _update_model(self, events, msg, root, model, doc, comm):
+    def _update_model(
+        self, events: Dict[str, param.parameterized.Event], msg: Dict[str, Any],
+        root: Model, model: Model, doc: Document, comm: Optional[Comm]
+    ) -> None:
         if 'axes' in msg and msg['axes'] is not None:
             VTKAxes = getattr(sys.modules['panel.models.vtk'], 'VTKAxes')
             axes = msg['axes']
@@ -146,9 +159,20 @@ class SyncHelpers:
 
 class VTK:
     """
-    Class factory: allows to switch between VTKJS, VTKRenderWindow, and
-    VTKRenderWindowSynchronized pane in function of the object type and
-    when the serialisation of the vtkRenderWindow occurs.
+    The VTK pane renders a VTK scene inside a panel, making it possible to
+    interact with complex geometries in 3D.
+
+    Reference: https://panel.holoviz.org/reference/panes/VTK.html
+
+    :Example:
+
+    >>> pn.extension('vtk')
+    >>> VTK(some_vtk_object, width=500, height=500)
+
+    This is a Class factory and allows to switch between VTKJS,
+    VTKRenderWindow, and VTKRenderWindowSynchronized pane as a function of the
+    object type and when the serialisation of the vtkRenderWindow occurs.
+
     Once a pane is returned by this class (inst = VTK(object)), one can
     use pn.help(inst) to see parameters available for the current pane
     """
@@ -215,7 +239,7 @@ class BaseVTKRenderWindow(AbstractVTK):
 
     _applies_kw = True
 
-    _rename = {'serialize_on_instantiation': None, 'serialize_all_data_arrays': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {'serialize_on_instantiation': None, 'serialize_all_data_arrays': None}
 
     __abstract = True
 
@@ -269,7 +293,7 @@ class BaseVTKRenderWindow(AbstractVTK):
     def _construct_colorbars(self, color_mappers=None):
         if not color_mappers:
             color_mappers = self.color_mappers
-        from bokeh.models import Plot, ColorBar, FixedTicker
+        from bokeh.models import ColorBar, FixedTicker, Plot
         cbs = []
         for color_mapper in color_mappers:
             ticks = np.linspace(color_mapper.low, color_mapper.high, 5)
@@ -286,10 +310,11 @@ class BaseVTKRenderWindow(AbstractVTK):
 
     def construct_colorbars(self, infer=True):
         if infer:
-            color_mappers = self.get_color_mappers(infer)
-            return Pane(self._construct_colorbars(color_mappers))
+            color_mappers = self.get_color_mappers(infer=True)
+            model = self._construct_colorbars(color_mappers)
+            return Bokeh(model)
         else:
-            return Pane(self._construct_colorbars)
+            return ParamMethod(self._construct_colorbars)
 
     def export_scene(self, filename='vtk_scene', all_data_arrays=False):
         if '.' not in filename:
@@ -355,9 +380,12 @@ class VTKRenderWindow(BaseVTKRenderWindow):
         super(VTKRenderWindow, self).__init__(object, **params)
         if object is not None:
             self.color_mappers = self.get_color_mappers()
-            self._update()
+            self._update(None, None)
 
-    def _get_model(self, doc, root=None, parent=None, comm=None):
+    def _get_model(
+        self, doc: Document, root: Optional[Model] = None,
+        parent: Optional[Model] = None, comm: Optional[Comm] = None
+    ) -> Model:
         VTKSynchronizedPlot = lazy_load(
             'panel.models.vtk', 'VTKSynchronizedPlot', isinstance(comm, JupyterComm), root
         )
@@ -374,7 +402,7 @@ class VTKRenderWindow(BaseVTKRenderWindow):
         self._models[root.ref['id']] = (model, parent)
         return model
 
-    def _update(self, ref=None, model=None):
+    def _update(self, ref: str, model: Model) -> None:
         import panel.pane.vtk.synchronizable_serializer as rws
         context = rws.SynchronizationContext(
             id_root=make_globally_unique_id(),
@@ -401,7 +429,7 @@ class VTKRenderWindowSynchronized(BaseVTKRenderWindow, SyncHelpers):
 
     _one_time_reset = param.Boolean(default=False)
 
-    _rename = dict(_one_time_reset='one_time_reset',
+    _rename: ClassVar[Mapping[str, str | None]] = dict(_one_time_reset='one_time_reset',
                    **BaseVTKRenderWindow._rename)
 
     _updates = True
@@ -417,7 +445,10 @@ class VTKRenderWindowSynchronized(BaseVTKRenderWindow, SyncHelpers):
         super().__init__(object, **params)
         self._contexts = {}
 
-    def _get_model(self, doc, root=None, parent=None, comm=None):
+    def _get_model(
+        self, doc: Document, root: Optional[Model] = None,
+        parent: Optional[Model] = None, comm: Optional[Comm] = None
+    ) -> Model:
         VTKSynchronizedPlot = lazy_load(
             'panel.models.vtk', 'VTKSynchronizedPlot', isinstance(comm, JupyterComm), root
         )
@@ -443,12 +474,12 @@ class VTKRenderWindowSynchronized(BaseVTKRenderWindow, SyncHelpers):
         self._models[root.ref['id']] = (model, parent)
         return model
 
-    def _cleanup(self, root):
+    def _cleanup(self, root: Model | None = None) -> None:
         ref = root.ref['id']
         self._contexts.pop(ref, None)
         super()._cleanup(root)
 
-    def _update(self, ref=None, model=None):
+    def _update(self, ref: str, model: Model) -> None:
         context = self._contexts[model.id]
         scene, arrays, annotations = self._serialize_ren_win(
             self.object,
@@ -504,6 +535,24 @@ class VTKRenderWindowSynchronized(BaseVTKRenderWindow, SyncHelpers):
 
 
 class VTKVolume(AbstractVTK):
+    """
+    The `VTKVolume` pane renders 3d volumetric data defined on regular grids.
+    It may be constructed from a 3D NumPy array or a vtkVolume.
+
+    The pane provides a number of interactive control which can be set either
+    through callbacks from Python or Javascript callbacks.
+
+    Reference: https://panel.holoviz.org/reference/panes/VTKVolume.html
+
+    :Example:
+
+    >>> pn.extension('vtk')
+    >>> VTKVolume(
+    ...    data_matrix, spacing=(3,2,1), interpolation='nearest',
+    ...    edge_gradient=0, sampling=0,
+    ...    sizing_mode='stretch_width', height=400,
+    ... )
+    """
 
     ambient = param.Number(default=0.2, step=1e-2, doc="""
         Value to control the ambient lighting. It is the light an
@@ -597,17 +646,17 @@ class VTKVolume(AbstractVTK):
 
     _serializers = {}
 
-    _rename = {'max_data_size': None, 'spacing': None, 'origin': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {'max_data_size': None, 'spacing': None, 'origin': None}
 
     _updates = True
 
     def __init__(self, object=None, **params):
         super().__init__(object, **params)
         self._sub_spacing = self.spacing
-        self._update()
+        self._update(None, None)
 
     @classmethod
-    def applies(cls, obj):
+    def applies(cls, obj: Any) -> float | bool | None:
         if ((isinstance(obj, np.ndarray) and obj.ndim == 3) or
             any([isinstance(obj, k) for k in cls._serializers.keys()])):
             return True
@@ -617,7 +666,10 @@ class VTKVolume(AbstractVTK):
             import vtk
             return isinstance(obj, vtk.vtkImageData)
 
-    def _get_model(self, doc, root=None, parent=None, comm=None):
+    def _get_model(
+        self, doc: Document, root: Optional[Model] = None,
+        parent: Optional[Model] = None, comm: Optional[Comm] = None
+    ) -> Model:
         VTKVolumePlot = lazy_load(
             'panel.models.vtk', 'VTKVolumePlot', isinstance(comm, JupyterComm), root
         )
@@ -666,7 +718,7 @@ class VTKVolume(AbstractVTK):
                     msg[k] = int(np.round(v * ori_dim[index] / sub_dim[index]))
         return msg
 
-    def _update(self, ref=None, model=None):
+    def _update(self, ref: str, model: Model) -> None:
         self._volume_data = self._get_volume_data()
         if self._volume_data is not None:
             self._orginal_dimensions = self._get_object_dimensions()
@@ -706,6 +758,7 @@ class VTKVolume(AbstractVTK):
             available_serializer = [v for k, v in VTKVolume._serializers.items() if isinstance(self.object, k)]
             if not available_serializer:
                 import vtk
+
                 from vtk.util import numpy_support
 
                 def volume_serializer(inst):
@@ -747,7 +800,18 @@ class VTKVolume(AbstractVTK):
 
 class VTKJS(AbstractVTK):
     """
-    VTK panes allow rendering vtk scene stored in a vtkjs.
+    The VTKJS pane allow rendering a vtk scene stored in a vtkjs.
+
+    Reference: https://panel.holoviz.org/reference/panes/VTKJS.html
+
+    :Example:
+
+    >>> pn.extension('vtk')
+    >>> VTK(
+    ...    'https://raw.githubusercontent.com/Kitware/vtk-js/master/Data/StanfordDragon.vtkjs',
+    ...     sizing_mode='stretch_width', height=400, enable_keybindings=True,
+    ...     orientation_widget=True
+    ... )
     """
 
     enable_keybindings = param.Boolean(default=False, doc="""
@@ -767,11 +831,14 @@ class VTKJS(AbstractVTK):
         self._vtkjs = None
 
     @classmethod
-    def applies(cls, obj):
-        if isinstance(obj, string_types) and obj.endswith('.vtkjs'):
+    def applies(cls, obj: Any) -> float | bool | None:
+        if isinstance(obj, str) and obj.endswith('.vtkjs'):
             return True
 
-    def _get_model(self, doc, root=None, parent=None, comm=None):
+    def _get_model(
+        self, doc: Document, root: Optional[Model] = None,
+        parent: Optional[Model] = None, comm: Optional[Comm] = None
+    ) -> Model:
         """
         Should return the bokeh model to be rendered.
         """
@@ -789,7 +856,7 @@ class VTKJS(AbstractVTK):
 
     def _get_vtkjs(self):
         if self._vtkjs is None and self.object is not None:
-            if isinstance(self.object, string_types) and self.object.endswith('.vtkjs'):
+            if isinstance(self.object, str) and self.object.endswith('.vtkjs'):
                 if isfile(self.object):
                     with open(self.object, 'rb') as f:
                         vtkjs = f.read()
@@ -801,7 +868,7 @@ class VTKJS(AbstractVTK):
             self._vtkjs = vtkjs
         return self._vtkjs
 
-    def _update(self, ref=None, model=None):
+    def _update(self, ref: str, model: Model) -> None:
         self._vtkjs = None
         vtkjs = self._get_vtkjs()
         model.data = base64encode(vtkjs) if vtkjs is not None else vtkjs

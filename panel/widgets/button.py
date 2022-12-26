@@ -1,27 +1,43 @@
 """
-Defines Button and button-like widgets which allow triggering events
-or merely toggling between on-off states.
+Defines the Button and button-like widgets which allow triggering
+events or merely toggling between on-off states.
 """
-from functools import partial
+from __future__ import annotations
+
+from typing import (
+    TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Mapping, Optional,
+    Type,
+)
 
 import param
 
+from bokeh.events import ButtonClick, MenuItemClick
 from bokeh.models import (
-    Button as _BkButton, Toggle as _BkToggle, Dropdown as _BkDropdown
+    Button as _BkButton, Dropdown as _BkDropdown, Toggle as _BkToggle,
 )
 
-from bokeh.events import (MenuItemClick, ButtonClick)
-
+from ..links import Callback
 from .base import Widget
 
+if TYPE_CHECKING:
+    from bokeh.document import Document
+    from bokeh.model import Model
+    from pyviz_comms import Comm
 
-BUTTON_TYPES = ['default', 'primary', 'success', 'warning', 'danger','light']
+    from ..links import JSLinkTarget, Link
+
+
+BUTTON_TYPES: List[str] = ['default', 'primary', 'success', 'warning', 'danger','light']
+
 
 class _ButtonBase(Widget):
 
-    button_type = param.ObjectSelector(default='default', objects=BUTTON_TYPES)
+    button_type = param.ObjectSelector(default='default', objects=BUTTON_TYPES, doc="""
+        A button theme; should be one of 'default' (white), 'primary'
+        (blue), 'success' (green), 'info' (yellow), 'light' (light),
+        or 'danger' (red).""")
 
-    _rename = {'name': 'label'}
+    _rename: ClassVar[Mapping[str, str | None]] = {'name': 'label'}
 
     __abstract = True
 
@@ -30,15 +46,17 @@ class _ClickButton(_ButtonBase):
 
     __abstract = True
 
-    _event = 'button_click'
+    _event: ClassVar[str] = 'button_click'
 
-    def _get_model(self, doc, root=None, parent=None, comm=None):
+    def _get_model(
+        self, doc: Document, root: Optional[Model] = None,
+        parent: Optional[Model] = None, comm: Optional[Comm] = None
+    ) -> Model:
         model = super()._get_model(doc, root, parent, comm)
-        ref = (root or model).ref['id']
-        model.on_click(partial(self._server_click, doc, ref))
+        self._register_events(self._event, model=model, doc=doc, comm=comm)
         return model
 
-    def js_on_click(self, args={}, code=""):
+    def js_on_click(self, args: Dict[str, Any] = {}, code: str = "") -> Callback:
         """
         Allows defining a JS callback to be triggered when the button
         is clicked.
@@ -58,9 +76,9 @@ class _ClickButton(_ButtonBase):
         from ..links import Callback
         return Callback(self, code={'event:'+self._event: code}, args=args)
 
-    def jscallback(self, args={}, **callbacks):
+    def jscallback(self, args: Dict[str, Any] = {}, **callbacks: str) -> Callback:
         """
-        Allows defining a JS callback to be triggered when a property
+        Allows defining a Javascript (JS) callback to be triggered when a property
         changes on the source object. The keyword arguments define the
         properties that trigger a callback and the JS code that gets
         executed.
@@ -78,66 +96,134 @@ class _ClickButton(_ButtonBase):
         callback: Callback
           The Callback which can be used to disable the callback.
         """
-        from ..links import Callback
         for k, v in list(callbacks.items()):
             if k == 'clicks':
                 k = 'event:'+self._event
-            callbacks[k] = self._rename.get(v, v)
+            val = self._rename.get(v, v)
+            if val is not None:
+                callbacks[k] = val
         return Callback(self, code=callbacks, args=args)
 
 
 class Button(_ClickButton):
+    """
+    The `Button` widget allows triggering events when the button is
+    clicked.
 
-    clicks = param.Integer(default=0)
+    The Button provides a `value` parameter, which will toggle from
+    `False` to `True` while the click event is being processed
 
-    value = param.Event()
+    It also provides an additional `clicks` parameter, that can be
+    watched to subscribe to click events.
 
-    _rename = {'clicks': None, 'name': 'label', 'value': None}
+    Reference: https://panel.holoviz.org/reference/widgets/Button.html#widgets-gallery-button
 
-    _target_transforms = {'event:button_click': None, 'value': None}
+    :Example:
 
-    _widget_type = _BkButton
+    >>> pn.widgets.Button(name='Click me', button_type='primary')
+    """
+
+    clicks = param.Integer(default=0, doc="""
+        Number of clicks (can be listened to)""")
+
+    value = param.Event(doc="""
+        Toggles from False to True while the event is being processed.""")
+
+    _rename: ClassVar[Mapping[str, str | None]] = {'clicks': None, 'name': 'label', 'value': None}
+
+    _target_transforms: ClassVar[Mapping[str, str | None]] = {
+        'event:button_click': None, 'value': None
+    }
+
+    _widget_type: ClassVar[Type[Model]] = _BkButton
 
     @property
-    def _linkable_params(self):
+    def _linkable_params(self) -> List[str]:
         return super()._linkable_params + ['value']
 
-    def jslink(self, target, code=None, args=None, bidirectional=False, **links):
+    def jslink(
+        self, target: JSLinkTarget, code: Optional[Dict[str, str]] = None,
+        args: Optional[Dict[str, Any]] = None, bidirectional: bool = False,
+        **links: str
+    ) -> Link:
+        """
+        Links properties on the this Button to those on the
+        `target` object in Javascript (JS) code.
+
+        Supports two modes, either specify a
+        mapping between the source and target model properties as
+        keywords or provide a dictionary of JS code snippets which
+        maps from the source parameter to a JS code snippet which is
+        executed when the property changes.
+
+        Arguments
+        ----------
+        target: panel.viewable.Viewable | bokeh.model.Model | holoviews.core.dimension.Dimensioned
+          The target to link the value(s) to.
+        code: dict
+          Custom code which will be executed when the widget value
+          changes.
+        args: dict
+          A mapping of objects to make available to the JS callback
+        bidirectional: boolean
+          Whether to link source and target bi-directionally. Default is `False`.
+        **links: dict[str,str]
+          A mapping between properties on the source model and the
+          target model property to link it to.
+
+        Returns
+        -------
+        Link
+          The Link can be used unlink the widget and the target model.
+        """
         links = {'event:'+self._event if p == 'value' else p: v for p, v in links.items()}
-        super().jslink(target, code, args, bidirectional, **links)
+        return super().jslink(target, code, args, bidirectional, **links)
 
-    jslink.__doc__ = Widget.jslink.__doc__
-
-    def _server_click(self, doc, ref, event):
-        processing = bool(self._events)
-        self._events.update({"clicks": self.clicks+1})
+    def _process_event(self, event: param.parameterized.Event) -> None:
         self.param.trigger('value')
-        if not processing:
-            if doc.session_context:
-                doc.add_timeout_callback(partial(self._change_coroutine, doc), self._debounce)
-            else:
-                self._change_event(doc)
+        self.clicks += 1
 
-    def _process_property_change(self, msg):
-        msg = super()._process_property_change(msg)
-        if 'clicks' in msg:
-            msg['clicks'] = self.clicks + 1
-        return msg
+    def on_click(
+        self, callback: Callable[[param.parameterized.Event], None]
+    ) -> param.parameterized.Watcher:
+        """
+        Register a callback to be executed when the `Button` is clicked.
 
-    def on_click(self, callback):
-        self.param.watch(callback, 'clicks', onlychanged=False)
+        The callback is given an `Event` argument declaring the number of clicks
+
+        Arguments
+        ---------
+        callback: (Callable[[param.parameterized.Event], None])
+            The function to run on click events. Must accept a positional `Event` argument
+
+        Returns
+        -------
+        watcher: param.Parameterized.Watcher
+          A `Watcher` that executes the callback when the button is clicked.
+        """
+        return self.param.watch(callback, 'clicks', onlychanged=False)
 
 
 class Toggle(_ButtonBase):
+    """The `Toggle` widget allows toggling a single condition between `True`/`False` states.
+
+    This widget is interchangeable with the `Checkbox` widget.
+
+    Reference: https://panel.holoviz.org/reference/widgets/Toggle.html
+
+    :Example:
+
+    >>> Toggle(name='Toggle', button_type='success')
+    """
 
     value = param.Boolean(default=False, doc="""
         Whether the button is currently toggled.""")
 
-    _rename = {'value': 'active', 'name': 'label'}
+    _rename: ClassVar[Mapping[str, str | None]] = {'value': 'active', 'name': 'label'}
 
-    _supports_embed = True
+    _supports_embed: ClassVar[bool] = True
 
-    _widget_type = _BkToggle
+    _widget_type: ClassVar[Type[Model]] = _BkToggle
 
     def _get_embed_state(self, root, values=None, max_opts=3):
         return (self, self._models[root.ref['id']][0], [False, True],
@@ -145,6 +231,22 @@ class Toggle(_ButtonBase):
 
 
 class MenuButton(_ClickButton):
+    """
+    The `MenuButton` widget allows specifying a list of menu items to
+    select from triggering events when the button is clicked.
+
+    Unlike other widgets, it does not have a `value`
+    parameter. Instead it has a `clicked` parameter that can be
+    watched to trigger events and which reports the last clicked menu
+    item.
+
+    Reference: https://panel.holoviz.org/reference/widgets/MenuButton.html
+
+    :Example:
+
+    >>> menu_items = [('Option A', 'a'), ('Option B', 'b'), None, ('Option C', 'c')]
+    >>> MenuButton(name='Dropdown', items=menu_items, button_type='primary')
+    """
 
     clicked = param.String(default=None, doc="""
       Last menu item that was clicked.""")
@@ -156,23 +258,43 @@ class MenuButton(_ClickButton):
     split = param.Boolean(default=False, doc="""
       Whether to add separate dropdown area to button.""")
 
-    _widget_type = _BkDropdown
+    _event: ClassVar[str] = 'menu_item_click'
 
-    _rename = {'name': 'label', 'items': 'menu', 'clicked': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {'name': 'label', 'items': 'menu', 'clicked': None}
 
-    _event = 'menu_item_click'
+    _widget_type: ClassVar[Type[Model]] = _BkDropdown
 
-    def on_click(self, callback):
-        self.param.watch(callback, 'clicked', onlychanged=False)
+    def _get_model(
+        self, doc: Document, root: Optional[Model] = None,
+        parent: Optional[Model] = None, comm: Optional[Comm] = None
+    ) -> Model:
+        model = super()._get_model(doc, root, parent, comm)
+        self._register_events('button_click', model=model, doc=doc, comm=comm)
+        return model
 
-    def _server_click(self, doc, ref, event):
-        processing = bool(self._events)
+    def _process_event(self, event):
         if isinstance(event, MenuItemClick):
-            self._events.update({"clicked": event.item})
+            item = event.item
         elif isinstance(event, ButtonClick):
-            self._events.update({"clicked": self.name})
-        if not processing:
-            if doc.session_context:
-                doc.add_timeout_callback(partial(self._change_coroutine, doc), self._debounce)
-            else:
-                self._change_event(doc)
+            item = self.name
+        self.clicked = item
+
+    def on_click(
+        self, callback: Callable[[param.parameterized.Event], None]
+    ) -> param.parameterized.Watcher:
+        """
+        Register a callback to be executed when the button is clicked.
+
+        The callback is given an `Event` argument declaring the number of clicks
+
+        Arguments
+        ---------
+        callback: (Callable[[param.parameterized.Event], None])
+            The function to run on click events. Must accept a positional `Event` argument
+
+        Returns
+        -------
+        watcher: param.Parameterized.Watcher
+          A `Watcher` that executes the callback when the MenuButton is clicked.
+        """
+        return self.param.watch(callback, 'clicked', onlychanged=False)

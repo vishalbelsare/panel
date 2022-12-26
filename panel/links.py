@@ -1,187 +1,97 @@
 """
 Defines Links which allow declaring links between bokeh properties.
 """
-import param
-import weakref
+from __future__ import annotations
+
+import difflib
 import sys
+import weakref
 
-import bokeh.core.properties as bp
-import param as pm
-import bokeh
+from typing import (
+    TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Sequence, Tuple, Type,
+    Union,
+)
 
-from bokeh.model import DataModel
-from bokeh.models import ColumnDataSource, CustomJS, Model as BkModel
+import param
 
-from .config import config
-from .io.notebook import push_on_root
+from bokeh.models import CustomJS, LayoutDOM, Model as BkModel
+
+from .io.datamodel import create_linked_datamodel
 from .models import ReactiveHTML
-from .reactive import Reactive, Syncable
+from .reactive import Reactive
+from .util.warnings import warn
 from .viewable import Viewable
 
+if TYPE_CHECKING:
+    from bokeh.model import Model
 
-class Parameterized(bokeh.core.property.bases.Property):
-    """ Accept a Parameterized object.
-
-    This property only exists to support type validation, e.g. for "accepts"
-    clauses. It is not serializable itself, and is not useful to add to
-    Bokeh models directly.
-
-    """
-    def validate(self, value, detail=True):
-        super().validate(value, detail)
-
-        if isinstance(value, param.Parameterized):
-            return
-
-        msg = "" if not detail else f"expected param.Parameterized, got {value!r}"
-        raise ValueError(msg)
+    try:
+        from holoviews.core.dimension import Dimensioned
+        JSLinkTarget = Union[Reactive, BkModel, 'Dimensioned']
+    except Exception:
+        JSLinkTarget = Union[Reactive, BkModel] # type: ignore
+    SourceModelSpec = Tuple[Optional[str], str]
+    TargetModelSpec = Tuple[Optional[str], Optional[str]]
 
 
-
-_DATA_MODELS = weakref.WeakKeyDictionary()
-
-PARAM_MAPPING = {
-    pm.Array: lambda p, kwargs: bp.Array(bp.Any, **kwargs),
-    pm.Boolean: lambda p, kwargs: bp.Bool(**kwargs),
-    pm.CalendarDate: lambda p, kwargs: bp.Date(**kwargs),
-    pm.CalendarDateRange: lambda p, kwargs: bp.Tuple(bp.Date, bp.Date, **kwargs),
-    pm.ClassSelector: lambda p, kwargs: (
-        (bp.Instance(DataModel, **kwargs), [(Parameterized, create_linked_datamodel)])
-        if isinstance(p.class_, type) and issubclass(p.class_, param.Parameterized) else
-        bp.Any(**kwargs)
-    ),
-    pm.Color: lambda p, kwargs: bp.Color(**kwargs),
-    pm.DataFrame: lambda p, kwargs: (
-        bp.ColumnData(bp.Any, bp.Seq(bp.Any), **kwargs),
-        [(bp.PandasDataFrame, lambda x: ColumnDataSource._data_from_df(x))]
-    ),
-    pm.DateRange: lambda p, kwargs: bp.Tuple(bp.Datetime, bp.Datetime, **kwargs),
-    pm.Date: lambda p, kwargs: bp.Datetime(**kwargs),
-    pm.Dict: lambda p, kwargs: bp.Dict(bp.String, bp.Any, **kwargs),
-    pm.Event: lambda p, kwargs: bp.Bool(**kwargs),
-    pm.Integer: lambda p, kwargs: bp.Int(**kwargs),
-    pm.List: lambda p, kwargs: bp.List(bp.Any, **kwargs),
-    pm.Number: lambda p, kwargs: bp.Float(**kwargs),
-    pm.NumericTuple: lambda p, kwargs: bp.Tuple(*(bp.Float for p in p.length), **kwargs),
-    pm.Range: lambda p, kwargs: bp.Tuple(bp.Float, bp.Float, **kwargs),
-    pm.String: lambda p, kwargs: bp.String(**kwargs),
-    pm.Tuple: lambda p, kwargs: bp.Tuple(*(bp.Any for p in p.length), **kwargs),
-}
-
-
-def construct_data_model(parameterized, name=None, ignore=[], types={}):
-    """
-    Dynamically creates a Bokeh DataModel class from a Parameterized
-    object.
-
-    Arguments
-    ---------
-    parameterized: param.Parameterized
-        The Parameterized class or instance from which to create the
-        DataModel
-    name: str or None
-        Name of the dynamically created DataModel class
-    ignore: list(str)
-        List of parameters to ignore.
-    types: dict
-        A dictionary mapping from parameter name to a Parameter type,
-        making it possible to override the default parameter types.
-
-    Returns
-    -------
-    DataModel
-    """
-
-    properties = {}
-    for pname in parameterized.param:
-        if pname in ignore:
+def assert_source_syncable(source: 'Reactive', properties: Iterable[str]) -> None:
+    for prop in properties:
+        if prop.startswith('event:'):
             continue
-        p = parameterized.param[pname]
-        if p.precedence and p.precedence < 0:
+        elif hasattr(source, 'object') and isinstance(source.object, LayoutDOM):
+            current = source.object
+            for attr in prop.split('.'):
+                if hasattr(current, attr):
+                    current = getattr(current, attr)
+                    continue
+                raise ValueError(
+                    f"Could not resolve {prop} on {source.object} model. "
+                    "Ensure you jslink an attribute that exists on the "
+                    "bokeh model."
+                )
+        elif (prop not in source.param and prop not in list(source._rename.values())):
+            matches = difflib.get_close_matches(prop, list(source.param))
+            if matches:
+                matches_repr = f' Similar parameters include: {matches!r}'
+            else:
+                matches_repr = ''
+            raise ValueError(
+                f"Could not jslink {prop!r} parameter (or property) "
+                f"on {type(source).__name__} object because it was not "
+                f"found. Similar parameters include: {matches_repr}."
+            )
+        elif (source._source_transforms.get(prop, False) is None or
+              source._rename.get(prop, False) is None):
+            raise ValueError(
+                f"Cannot jslink {prop!r} parameter on {type(source).__name__} "
+                "object, the parameter requires a live Python kernel "
+                "to have an effect."
+            )
+
+def assert_target_syncable(
+    source: 'Reactive', target: 'JSLinkTarget', properties: Dict[str, str]
+) -> None:
+    for k, p in properties.items():
+        if k.startswith('event:'):
             continue
-        ptype = types.get(pname, type(p))
-        prop = PARAM_MAPPING.get(ptype)
-        if isinstance(parameterized, Syncable):
-            pname = parameterized._rename.get(pname, pname)
-        if pname == 'name' or pname is None:
-            continue
-        nullable = getattr(p, 'allow_None', False)
-        kwargs = {'default': p.default, 'help': p.doc}
-        if prop is None:
-            bk_prop, accepts = bp.Any(**kwargs), []
-        else:
-            bkp = prop(p, {} if nullable else kwargs)
-            bk_prop, accepts = bkp if isinstance(bkp, tuple) else (bkp, [])
-            if nullable:
-                bk_prop = bp.Nullable(bk_prop, **kwargs)
-        for bkp, convert in accepts:
-            bk_prop = bk_prop.accepts(bkp, convert)
-        properties[pname] = bk_prop
-    name = name or parameterized.name
-    return type(name, (DataModel,), properties)
-
-
-def create_linked_datamodel(obj, root=None):
-    """
-    Creates a Bokeh DataModel from a Parameterized class or instance
-    which automatically links the parameters bi-directionally.
-
-    Arguments
-    ---------
-    obj: param.Parameterized
-       The Parameterized class to create a linked DataModel for.
-
-    Returns
-    -------
-    DataModel instance linked to the Parameterized object.
-    """
-    if isinstance(obj, type) and issubclass(obj, param.Parameterized):
-        cls = obj
-    elif isinstance(obj, param.Parameterized):
-        cls = type(obj)
-    else:
-        raise TypeError('Can only create DataModel for Parameterized class or instance.')
-    if cls in _DATA_MODELS:
-        model = _DATA_MODELS[cls]
-    else:
-        _DATA_MODELS[cls] = model = construct_data_model(obj)
-    model = model(**obj.param.values())
-    _changing = []
-
-    def cb_bokeh(attr, old, new):
-        if attr in _changing:
-            return
-        try:
-            _changing.append(attr)
-            obj.param.update(**{attr: new})
-        finally:
-            _changing.remove(attr)
-
-    def cb_param(*events):
-        update = {
-            event.name: event.new for event in events
-            if event.name not in _changing
-        }
-        try:
-            _changing.extend(list(update))
-            model.update(**update)
-            tags = [tag for tag in model.tags if tag.startswith('__ref:')]
-            if root:
-                push_on_root(root.ref['id'])
-            elif tags:
-                ref = tags[0].split('__ref:')[-1]
-                push_on_root(ref)
-        finally:
-            for attr in update:
-                _changing.remove(attr)
-
-    for p in obj.param:
-        model.on_change(p, cb_bokeh)
-
-    obj.param.watch(cb_param, list(obj.param))
-
-    return model
-
+        elif p not in target.param and p not in list(target._rename.values()):
+            matches = difflib.get_close_matches(p, list(target.param))
+            if matches:
+                matches_repr = ' Similar parameters include: %r' % matches
+            else:
+                matches_repr = ''
+            raise ValueError(
+                f"Could not jslink {p!r} parameter (or property) "
+                f"on {type(source).__name__} object because it was not "
+                f"found. Similar parameters include: {matches_repr}"
+            )
+        elif (target._source_transforms.get(p, False) is None or
+              target._rename.get(p, False) is None):
+            raise ValueError(
+                f"Cannot jslink {k!r} parameter on {type(source).__name__} "
+                f"object to {p!r} parameter on {type(target).__name__}. "
+                "It requires a live Python kernel to have an effect."
+            )
 
 class Callback(param.Parameterized):
     """
@@ -201,29 +111,58 @@ class Callback(param.Parameterized):
         snippet to be executed if the source property changes.""")
 
     # Mapping from a source id to a Link instance
-    registry = weakref.WeakKeyDictionary()
+    registry: weakref.WeakKeyDictionary[Reactive | BkModel, List['Callback']] = weakref.WeakKeyDictionary()
 
     # Mapping to define callbacks by backend and Link type.
     # e.g. Callback._callbacks[Link] = Callback
-    _callbacks = {}
+    _callbacks: Dict[Type['Callback'], Type['CallbackGenerator']] = {}
 
     # Whether the link requires a target
-    _requires_target = False
+    _requires_target: bool = False
 
-    def __init__(self, source, target=None, **params):
+    def __init__(
+        self, source: 'Reactive', target: 'JSLinkTarget' = None,
+        args: Dict[str, Any] = None, code: Dict[str, str] = None,
+        **params
+    ):
+        """
+        A Callback defines some callback to be triggered when a
+        property changes on the source object. A Callback can execute
+        arbitrary Javascript code and will make all objects referenced
+        in the args available in the JS namespace.
+
+        Arguments
+        ---------
+        source (Reactive):
+           The source object the callback is attached to.
+        target (Reactive | Model, optional):
+           An optional target to trigger some action on when the source
+           property changes.
+        args (Dict[str, Any], optional):
+           Additional args to make available in the Javascript namespace
+           indexed by name.
+        code (Dict[str, str], optional):
+           A dictionary mapping from the changed source property to
+           a JS code snippet to execute.
+        """
         if source is None:
             raise ValueError('%s must define a source' % type(self).__name__)
         # Source is stored as a weakref to allow it to be garbage collected
         self._source = None if source is None else weakref.ref(source)
-        super().__init__(**params)
+        if not args:
+            args={}
+        super().__init__(args=args, code=code, **params)
         self.init()
 
-    def init(self):
+    def init(self) -> None:
         """
         Registers the Callback
         """
-        if self.source in self.registry:
-            links = self.registry[self.source]
+        source = self.source
+        if source is None:
+            return
+        if source in self.registry:
+            links = self.registry[source]
             params = {
                 k: v for k, v in self.param.values().items() if k != 'name'
             }
@@ -233,15 +172,15 @@ class Callback(param.Parameterized):
                 }
                 if not hasattr(link, 'target'):
                     pass
-                elif (type(link) is type(self) and link.source is self.source
+                elif (type(link) is type(self) and link.source is source
                     and link.target is self.target and params == link_params):
                     return
-            self.registry[self.source].append(self)
+            self.registry[source].append(self)
         else:
-            self.registry[self.source] = [self]
+            self.registry[source] = [self]
 
     @classmethod
-    def register_callback(cls, callback):
+    def register_callback(cls, callback: Type['CallbackGenerator']) -> None:
         """
         Register a LinkCallback providing the implementation for
         the Link for a particular backend.
@@ -249,16 +188,17 @@ class Callback(param.Parameterized):
         cls._callbacks[cls] = callback
 
     @property
-    def source(self):
+    def source(self) -> Reactive | None:
         return self._source() if self._source else None
 
     @classmethod
-    def _process_callbacks(cls, root_view, root_model):
+    def _process_callbacks(cls, root_view: 'Viewable', root_model: BkModel):
         if not root_model:
             return
 
-        linkable = root_view.select(Viewable)
-        linkable += root_model.select({'type' : BkModel})
+        linkable = (
+            root_view.select(Viewable) + list(root_model.select({'type' : BkModel})) # type: ignore
+        )
 
         if not linkable:
             return
@@ -270,9 +210,15 @@ class Callback(param.Parameterized):
             or isinstance(link.target, param.Parameterized)
         ]
 
-        arg_overrides = {}
+        arg_overrides: Dict[int, Dict[str, Any]] = {}
         if 'holoviews' in sys.modules:
+            from holoviews.core.dimension import Dimensioned
+
             from .pane.holoviews import HoloViews, generate_panel_bokeh_map
+            found = [
+                (link, src, tgt) for (link, src, tgt) in found
+                if not (isinstance(src, Dimensioned) or isinstance(tgt, Dimensioned))
+            ]
             hv_views = root_view.select(HoloViews)
             map_hve_bk = generate_panel_bokeh_map(root_model, hv_views)
             for src in linkable:
@@ -291,7 +237,6 @@ class Callback(param.Parameterized):
                             arg_overrides[id(link)][k] = tgt
 
         ref = root_model.ref['id']
-        callbacks = []
         for (link, src, tgt) in found:
             cb = cls._callbacks[type(link)]
             if ((src is None or ref not in getattr(src, '_models', [ref])) or
@@ -299,10 +244,7 @@ class Callback(param.Parameterized):
                 (tgt is not None and ref not in getattr(tgt, '_models', [ref]))):
                 continue
             overrides = arg_overrides.get(id(link), {})
-            callbacks.append(
-                cb(root_model, link, src, tgt, arg_overrides=overrides)
-            )
-        return callbacks
+            cb(root_model, link, src, tgt, arg_overrides=overrides)
 
 
 class Link(Callback):
@@ -329,7 +271,7 @@ class Link(Callback):
     # Whether the link requires a target
     _requires_target = True
 
-    def __init__(self, source, target=None, **params):
+    def __init__(self, source: 'Reactive', target: Optional['JSLinkTarget'] = None, **params):
         if self._requires_target and target is None:
             raise ValueError('%s must define a target.' % type(self).__name__)
         # Source is stored as a weakref to allow it to be garbage collected
@@ -337,16 +279,20 @@ class Link(Callback):
         super().__init__(source, **params)
 
     @property
-    def target(self):
+    def target(self) -> 'JSLinkTarget' | None:
         return self._target() if self._target else None
 
-    def link(self):
+    def link(self) -> None:
         """
         Registers the Link
         """
         self.init()
-        if self.source in self.registry:
-            links = self.registry[self.source]
+        source = self.source
+        if source is None:
+            return
+
+        if source in self.registry:
+            links = self.registry[source]
             params = {
                 k: v for k, v in self.param.values().items() if k != 'name'
             }
@@ -354,28 +300,34 @@ class Link(Callback):
                 link_params = {
                     k: v for k, v in link.param.values().items() if k != 'name'
                 }
-                if (type(link) is type(self) and link.source is self.source
+                if (type(link) is type(self) and link.source is source
                     and link.target is self.target and params == link_params):
                     return
-            self.registry[self.source].append(self)
+            self.registry[source].append(self)
         else:
-            self.registry[self.source] = [self]
+            self.registry[source] = [self]
 
-    def unlink(self):
+    def unlink(self) -> None:
         """
         Unregisters the Link
         """
-        links = self.registry.get(self.source)
+        source = self.source
+        if source is None:
+            return
+        links = self.registry.get(source, [])
         if self in links:
-            links.pop(links.index(self))
+            links.remove(self)
 
 
 
 class CallbackGenerator(object):
 
-    error = False
+    error = True
 
-    def __init__(self, root_model, link, source, target=None, arg_overrides={}):
+    def __init__(
+        self, root_model: 'Model', link: 'Link', source: 'Reactive',
+        target: Optional['JSLinkTarget'] = None, arg_overrides: Dict[str, Any] = {}
+    ):
         self.root_model = root_model
         self.link = link
         self.source = source
@@ -395,7 +347,9 @@ class CallbackGenerator(object):
                     pass
 
     @classmethod
-    def _resolve_model(cls, root_model, obj, model_spec):
+    def _resolve_model(
+        cls, root_model: 'Model', obj: 'JSLinkTarget', model_spec: str | None
+    ) -> 'Model' | None:
         """
         Resolves a model given the supplied object and a model_spec.
 
@@ -430,7 +384,7 @@ class CallbackGenerator(object):
                     model_spec = None
                 model = obj.handles[handle_spec]
         elif isinstance(obj, Viewable):
-            model, _ = obj._models[root_model.ref['id']]
+            model, _ = obj._models.get(root_model.ref['id'], (None, None))
         elif isinstance(obj, BkModel):
             model = obj
         elif isinstance(obj, param.Parameterized):
@@ -438,19 +392,31 @@ class CallbackGenerator(object):
         if model_spec is not None:
             for spec in model_spec.split('.'):
                 model = getattr(model, spec)
+
         return model
 
-    def _init_callback(self, root_model, link, source, src_spec, target, tgt_spec, code):
+    def _init_callback(
+        self, root_model: 'Model', link: 'Link', source: 'Reactive',
+        src_spec: 'SourceModelSpec', target: 'JSLinkTarget' | None,
+        tgt_spec: 'TargetModelSpec', code: Optional[str]
+    ) -> None:
         references = {k: v for k, v in link.param.values().items()
                       if k not in ('source', 'target', 'name', 'code', 'args')}
 
         src_model = self._resolve_model(root_model, source, src_spec[0])
-        ref = root_model.ref['id']
-        link_id = id(link)
-        if (any(link_id in cb.tags for cbs in src_model.js_property_callbacks.values() for cb in cbs) or
-            any(link_id in cb.tags for cbs in src_model.js_event_callbacks.values() for cb in cbs)):
-            # Skip registering callback if already registered
+        if src_model is None:
             return
+        ref = root_model.ref['id']
+
+        link_id = (id(link), src_spec, tgt_spec)
+        callbacks = (
+            list(src_model.js_property_callbacks.values()) + # type: ignore
+            list(src_model.js_event_callbacks.values()) # type: ignore
+        )
+        # Skip registering callback if already registered
+        if any(link_id in cb.tags for cbs in callbacks for cb in cbs):
+            return
+
         references['source'] = src_model
 
         tgt_model = None
@@ -494,12 +460,12 @@ class CallbackGenerator(object):
 
         # Handle links with ReactiveHTML DataModel
         if isinstance(src_model, ReactiveHTML):
-            if src_spec[1] in src_model.data.properties():
-                references['source'] = src_model = src_model.data
+            if src_spec[1] in src_model.data.properties(): # type: ignore
+                references['source'] = src_model = src_model.data # type: ignore
 
         if isinstance(tgt_model, ReactiveHTML):
-            if tgt_spec[1] in tgt_model.data.properties():
-                references['target'] = tgt_model = tgt_model.data
+            if tgt_spec[1] in tgt_model.data.properties(): # type: ignore
+                references['target'] = tgt_model = tgt_model.data # type: ignore
 
         self._initialize_models(link, source, src_model, src_spec[1], target, tgt_model, tgt_spec[1])
         self._process_references(references)
@@ -516,69 +482,86 @@ class CallbackGenerator(object):
         for ev in events:
             src_model.js_on_event(ev, src_cb)
 
-        if getattr(link, 'bidirectional', False):
-            code = self._get_code(link, target, tgt_spec[1], source, src_spec[1])
-            reverse_references = dict(references)
-            reverse_references['source'] = tgt_model
-            reverse_references['target'] = src_model
-            tgt_cb = CustomJS(args=reverse_references, code=code, tags=[link_id])
-            changes, events = self._get_triggers(link, tgt_spec)
-            properties = tgt_model.properties()
-            for ch in changes:
-                if ch not in properties:
-                    msg = f"Could not link non-existent property '{ch}' on {tgt_model} model"
-                    if self.error:
-                        raise ValueError(msg)
-                    else:
-                        self.param.warning(msg)
-                tgt_model.js_on_change(ch, tgt_cb)
-            for ev in events:
-                tgt_model.js_on_event(ev, tgt_cb)
+        tgt_prop = tgt_spec[1]
+        if not getattr(link, 'bidirectional', False) or tgt_model is None or tgt_prop is None:
+            return
+
+        code = self._get_code(link, target, tgt_prop, source, src_spec[1])
+        reverse_references = dict(references)
+        reverse_references['source'] = tgt_model
+        reverse_references['target'] = src_model
+        tgt_cb = CustomJS(args=reverse_references, code=code, tags=[link_id])
+        changes, events = self._get_triggers(link, (None, tgt_prop))
+        properties = tgt_model.properties()
+        for ch in changes:
+            if ch not in properties:
+                msg = f"Could not link non-existent property '{ch}' on {tgt_model} model"
+                if self.error:
+                    raise ValueError(msg)
+                else:
+                    warn(msg)
+            tgt_model.js_on_change(ch, tgt_cb)
+        for ev in events:
+            tgt_model.js_on_event(ev, tgt_cb)
 
     def _process_references(self, references):
         """
         Method to process references in place.
         """
 
-    def _get_specs(self, link):
+    def _get_specs(
+        self, link: 'Link', source: 'Reactive', target: 'JSLinkTarget'
+    ) -> Sequence[Tuple['SourceModelSpec', 'TargetModelSpec', str | None]]:
         """
         Return a list of spec tuples that define source and target
         models.
         """
         return []
 
-    def _get_code(self, link, source, target):
+    def _get_code(
+        self, link: 'Link', source: 'JSLinkTarget', src_spec: str,
+        target: 'JSLinkTarget' | None, tgt_spec: str | None
+    ) -> str:
         """
         Returns the code to be executed.
         """
         return ''
 
-    def _get_triggers(self, link, src_spec):
+    def _get_triggers(
+        self, link: 'Link', src_spec: 'SourceModelSpec'
+    ) -> Tuple[List[str], List[str]]:
         """
         Returns the changes and events that trigger the callback.
         """
         return [], []
 
-    def _initialize_models(self, link, source, src_model, src_spec, target, tgt_model, tgt_spec):
+    def _initialize_models(
+        self, link, source: 'Reactive', src_model: 'Model', src_spec: str,
+        target: 'JSLinkTarget' | None, tgt_model: 'Model' | None, tgt_spec: str | None
+    ) -> None:
         """
         Applies any necessary initialization to the source and target
         models.
         """
         pass
 
-    def validate(self):
+    def validate(self) -> None:
         pass
 
 
 
 class JSCallbackGenerator(CallbackGenerator):
 
-    def _get_triggers(self, link, src_spec):
+    def _get_triggers(
+        self, link: 'Link', src_spec: 'SourceModelSpec'
+    ) -> Tuple[List[str], List[str]]:
         if src_spec[1].startswith('event:'):
             return [], [src_spec[1].split(':')[1]]
         return [src_spec[1]], []
 
-    def _get_specs(self, link, source, target):
+    def _get_specs(
+        self, link: 'Link', source: 'Reactive', target: 'JSLinkTarget'
+    ) -> Sequence[Tuple['SourceModelSpec', 'TargetModelSpec', str | None]]:
         for src_spec, code in link.code.items():
             src_specs = src_spec.split('.')
             if src_spec.startswith('event:'):
@@ -659,7 +642,9 @@ class JSLinkCallbackGenerator(JSCallbackGenerator):
     target['css_classes'] = css_classes
     """
 
-    def _get_specs(self, link, source, target):
+    def _get_specs(
+        self, link: 'Link', source: 'Reactive', target: 'JSLinkTarget'
+    ) -> Sequence[Tuple['SourceModelSpec', 'TargetModelSpec', str | None]]:
         if link.code:
             return super()._get_specs(link, source, target)
 
@@ -684,14 +669,16 @@ class JSLinkCallbackGenerator(JSCallbackGenerator):
             specs.append((src_spec, tgt_spec, None))
         return specs
 
-    def _initialize_models(self, link, source, src_model, src_spec, target, tgt_model, tgt_spec):
-        if tgt_model and src_spec and tgt_spec:
+    def _initialize_models(
+        self, link, source: 'Reactive', src_model: 'Model', src_spec: str,
+        target: 'JSLinkTarget' | None, tgt_model: 'Model' | None, tgt_spec: str | None
+    ) -> None:
+        if tgt_model is not None and src_spec and tgt_spec:
             src_reverse = {v: k for k, v in getattr(source, '_rename', {}).items()}
             src_param = src_reverse.get(src_spec, src_spec)
             if src_spec.startswith('event:'):
                 return
-            if (hasattr(source, '_process_property_change') and
-                src_param in source.param and hasattr(target, '_process_param_change')):
+            if isinstance(source, Reactive) and src_param in source.param and isinstance(target, Reactive):
                 tgt_reverse = {v: k for k, v in target._rename.items()}
                 tgt_param = tgt_reverse.get(tgt_spec, tgt_spec)
                 value = getattr(source, src_param)
@@ -711,7 +698,7 @@ class JSLinkCallbackGenerator(JSCallbackGenerator):
                              '%s and no custom code was specified.' %
                              type(self.target).__name__)
 
-    def _process_references(self, references):
+    def _process_references(self, references: Dict[str, str]) -> None:
         """
         Strips target_ prefix from references.
         """
@@ -720,7 +707,10 @@ class JSLinkCallbackGenerator(JSCallbackGenerator):
                 continue
             references[k[7:]] = references.pop(k)
 
-    def _get_code(self, link, source, src_spec, target, tgt_spec):
+    def _get_code(
+        self, link: 'Link', source: 'JSLinkTarget', src_spec: str,
+        target: 'JSLinkTarget' | None, tgt_spec: str | None
+    ) -> str:
         if isinstance(source, Reactive):
             src_reverse = {v: k for k, v in source._rename.items()}
             src_param = src_reverse.get(src_spec, src_spec)
@@ -732,12 +722,14 @@ class JSLinkCallbackGenerator(JSCallbackGenerator):
         if isinstance(target, Reactive):
             tgt_reverse = {v: k for k, v in target._rename.items()}
             tgt_param = tgt_reverse.get(tgt_spec, tgt_spec)
-            tgt_transform = target._target_transforms.get(tgt_param)
-            if tgt_transform is None:
+            if tgt_param is None:
                 tgt_transform = 'value'
+            else:
+                tgt_transform = target._target_transforms.get(tgt_param, 'value')
         else:
             tgt_transform = 'value'
         if tgt_spec == 'loading':
+            from .config import config
             return self._loading_link_template.format(
                 src_attr=src_spec, src_transform=src_transform,
                 loading_spinner=config.loading_spinner
@@ -758,3 +750,11 @@ Callback.register_callback(callback=JSCallbackGenerator)
 Link.register_callback(callback=JSLinkCallbackGenerator)
 
 Viewable._preprocessing_hooks.append(Callback._process_callbacks)
+
+__all__ = (
+    "Callback",
+    "CallbackGenerator",
+    "JSCallbackGenerator",
+    "JSLinkCallbackGenerator",
+    "Link"
+)

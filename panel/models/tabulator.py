@@ -4,31 +4,57 @@ Implementation of the Tabulator model.
 See http://tabulator.info/
 """
 from bokeh.core.properties import (
-    Any, Bool, Dict, Either, Enum, Instance, Int, List, Nullable,
-    String, Tuple
+    Any, Bool, Dict, Either, Enum, Instance, Int, List, Nullable, String,
+    Tuple,
 )
 from bokeh.events import ModelEvent
 from bokeh.models import ColumnDataSource, LayoutDOM
 from bokeh.models.layouts import HTMLBox
 from bokeh.models.widgets.tables import TableColumn
 
-from ..io.resources import bundled_files
+from ..config import config
+from ..io.resources import JS_VERSION, bundled_files
 from ..util import classproperty
 
-JS_SRC = "https://unpkg.com/tabulator-tables@5.0.7/dist/js/tabulator.js"
-MOMENT_SRC = "https://cdn.jsdelivr.net/npm/luxon/build/global/luxon.min.js"
+TABULATOR_VERSION = "5.3.2"
 
-THEME_PATH = "tabulator-tables@5.0.7/dist/css/"
-THEME_URL = f"https://unpkg.com/{THEME_PATH}"
-PANEL_CDN = f'https://cdn.jsdelivr.net/npm/@holoviz/panel/dist/bundled/{THEME_PATH}'
+JS_SRC = f"{config.npm_cdn}/tabulator-tables@{TABULATOR_VERSION}/dist/js/tabulator.js"
+MOMENT_SRC = f"{config.npm_cdn}/luxon/build/global/luxon.min.js"
+
+THEME_PATH = f"tabulator-tables@{TABULATOR_VERSION}/dist/css/"
+THEME_URL = f"{config.npm_cdn}/{THEME_PATH}"
+PANEL_CDN = f"{config.npm_cdn}/@holoviz/panel@{JS_VERSION}/dist/bundled/datatabulator/{THEME_PATH}"
 TABULATOR_THEMES = [
     'default', 'site', 'simple', 'midnight', 'modern', 'bootstrap',
     'bootstrap4', 'materialize', 'bulma', 'semantic-ui', 'fast'
 ]
+# Theme names were renamed in Tabulator 5.0.
+_TABULATOR_THEMES_MAPPING = {
+    'bootstrap': 'bootstrap3',
+    'semantic-ui': 'semanticui',
+}
 
 class TableEditEvent(ModelEvent):
 
     event_name = 'table-edit'
+
+    def __init__(self, model, column, row, pre=False, value=None, old=None):
+        self.column = column
+        self.row = row
+        self.value = value
+        self.old = old
+        self.pre = pre
+        super().__init__(model=model)
+
+    def __repr__(self):
+        return (
+            f'{type(self).__name__}(column={self.column}, row={self.row}, '
+            f'value={self.value}, old={self.old})'
+        )
+
+class CellClickEvent(ModelEvent):
+
+    event_name = 'cell-click'
 
     def __init__(self, model, column, row, value=None):
         self.column = column
@@ -36,17 +62,14 @@ class TableEditEvent(ModelEvent):
         self.value = value
         super().__init__(model=model)
 
+    def __repr__(self):
+        return (
+            f'{type(self).__name__}(column={self.column}, row={self.row}, '
+            f'value={self.value})'
+        )
 
 def _get_theme_url(url, theme):
-    if 'bootstrap' in theme:
-        url += 'bootstrap/'
-    elif 'materialize' in theme:
-        url += 'materialize/'
-    elif 'semantic-ui' in theme:
-        url += 'semantic-ui/'
-    elif 'bulma' in theme:
-        url += 'bulma/'
-    elif 'fast' in theme:
+    if 'fast' in theme:
         if url.startswith(THEME_URL):
             url = url.replace(THEME_URL, PANEL_CDN)
         url += 'fast/'
@@ -58,6 +81,7 @@ for theme in TABULATOR_THEMES:
     if theme == 'default':
         _url += 'tabulator.min.css'
     else:
+        theme = _TABULATOR_THEMES_MAPPING.get(theme, theme)
         _url += f'tabulator_{theme}.min.css'
     CSS_URLS.append(_url)
 
@@ -68,6 +92,8 @@ class DataTabulator(HTMLBox):
     """
 
     aggregators = Dict(String, String)
+
+    buttons = Dict(String, String)
 
     configuration = Dict(String, Any)
 
@@ -101,7 +127,7 @@ class DataTabulator(HTMLBox):
 
     source = Instance(ColumnDataSource)
 
-    styles = Dict(Int, Dict(Int, List(Either(String, Tuple(String, String)))))
+    styles = Dict(String, Either(String, Dict(Int, Dict(Int, List(Either(String, Tuple(String, String)))))))
 
     pagination = Nullable(String)
 
@@ -113,7 +139,7 @@ class DataTabulator(HTMLBox):
 
     sorters = List(Dict(String, String))
 
-    select_mode = Any(default=True)
+    select_mode = Any()
 
     selectable_rows = Nullable(List(Int))
 
@@ -154,4 +180,3 @@ class DataTabulator(HTMLBox):
             'moment': 'moment'
         }
     }
-

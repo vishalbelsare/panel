@@ -6,11 +6,14 @@ except ImportError:
 import pytest
 
 from bokeh.plotting import figure
+
 from panel.layout import Row
 from panel.links import Link
 from panel.pane import Bokeh, HoloViews
-from panel.widgets import FloatSlider, RangeSlider, ColorPicker, TextInput, DatetimeInput
 from panel.tests.util import hv_available
+from panel.widgets import (
+    ColorPicker, DatetimeInput, FloatSlider, RangeSlider, TextInput,
+)
 
 
 def test_widget_link_bidirectional():
@@ -82,10 +85,9 @@ def test_widget_link_no_target_transform_error():
 
     with pytest.raises(ValueError) as excinfo:
         t2.jslink(t1, value='value')
-    assert ("Cannot jslink \'value\' parameter on TextInput object "
-            "to \'value\' parameter on DatetimeInput object") in str(excinfo)
+    assert ("Cannot jslink 'value' parameter on TextInput object to 'value' parameter on DatetimeInput") in str(excinfo)
 
-    
+
 @hv_available
 def test_pnwidget_hvplot_links(document, comm):
     size_widget = FloatSlider(value=5, start=1, end=10)
@@ -218,7 +220,7 @@ def test_widget_bkplot_link(document, comm):
     assert link_customjs.args['source'] is model.children[1]
     assert link_customjs.args['target'] is scatter.glyph
     assert scatter.glyph.fill_color == '#ff00ff'
-    
+
     code = """
     var value = source['color'];
     value = value;
@@ -244,10 +246,10 @@ def test_bokeh_figure_jslink(document, comm):
 
     pane = Bokeh(fig)
     t1 = TextInput()
-    
+
     pane.jslink(t1, **{'x_range.start': 'value'})
     row = Row(pane, t1)
-    
+
     model = row.get_root(document, comm)
 
     link_customjs = fig.x_range.js_property_callbacks['change:start'][-1]

@@ -1,10 +1,10 @@
-from distutils.version import LooseVersion
-
 import pytest
+
+from packaging.version import Version
 
 try:
     import altair as alt
-    altair_version = LooseVersion(alt.__version__)
+    altair_version = Version(alt.__version__)
 except Exception:
     alt = None
 
@@ -13,8 +13,10 @@ altair_available = pytest.mark.skipif(alt is None, reason="requires altair")
 
 import numpy as np
 
+import panel as pn
+
 from panel.models.vega import VegaPlot
-from panel.pane import Pane, PaneBase, Vega
+from panel.pane import PaneBase, Vega
 
 blank_schema = {'$schema': ''}
 
@@ -137,7 +139,7 @@ def test_get_vega_pane_type_from_dict():
 
 
 def test_vega_pane(document, comm):
-    pane = Pane(vega_example)
+    pane = pn.panel(vega_example)
 
     # Create pane
     model = pane.get_root(document, comm=comm)
@@ -147,16 +149,16 @@ def test_vega_pane(document, comm):
 
     assert dict(model.data, **blank_schema) == dict(expected, **blank_schema)
     cds_data = model.data_sources['data'].data
-    assert np.array_equal(cds_data['x'], np.array(['A', 'B', 'C', 'D', 'E'])) 
+    assert np.array_equal(cds_data['x'], np.array(['A', 'B', 'C', 'D', 'E']))
     assert np.array_equal(cds_data['y'], np.array([5, 3, 6, 7, 2]))
 
     point_example = dict(vega_example, mark='point')
     point_example['data']['values'][0]['x'] = 'C'
     pane.object = point_example
-    point_example['data'].pop('values')
+    point_example = dict(point_example, data={})
     assert model.data == point_example
     cds_data = model.data_sources['data'].data
-    assert np.array_equal(cds_data['x'], np.array(['C', 'B', 'C', 'D', 'E'])) 
+    assert np.array_equal(cds_data['x'], np.array(['C', 'B', 'C', 'D', 'E']))
     assert np.array_equal(cds_data['y'], np.array([5, 3, 6, 7, 2]))
 
     pane._cleanup(model)
@@ -164,7 +166,7 @@ def test_vega_pane(document, comm):
 
 
 def test_vega_geometry_data(document, comm):
-    pane = Pane(gdf_example)
+    pane = pn.panel(gdf_example)
 
     # Create pane
     model = pane.get_root(document, comm=comm)
@@ -175,7 +177,7 @@ def test_vega_geometry_data(document, comm):
 
 
 def test_vega_pane_inline(document, comm):
-    pane = Pane(vega_inline_example)
+    pane = pn.panel(vega_inline_example)
 
     # Create pane
     model = pane.get_root(document, comm=comm)
@@ -186,7 +188,7 @@ def test_vega_pane_inline(document, comm):
 
     pane._cleanup(model)
     assert pane._models == {}
-    
+
 
 def altair_example():
     import altair as alt
@@ -209,31 +211,31 @@ def test_get_vega_pane_type_from_altair():
 
 @altair_available
 def test_altair_pane(document, comm):
-    pane = Pane(altair_example())
+    pane = pn.panel(altair_example())
 
     # Create pane
     model = pane.get_root(document, comm=comm)
     assert isinstance(model, VegaPlot)
 
     expected = dict(vega_example, data={})
-    if altair_version >= '4.0.0':
+    if altair_version >= Version('4.0.0'):
         expected['config'] = vega4_config
     assert dict(model.data, **blank_schema) == dict(expected, **blank_schema)
 
     cds_data = model.data_sources['data'].data
-    assert np.array_equal(cds_data['x'], np.array(['A', 'B', 'C', 'D', 'E'])) 
+    assert np.array_equal(cds_data['x'], np.array(['A', 'B', 'C', 'D', 'E']))
     assert np.array_equal(cds_data['y'], np.array([5, 3, 6, 7, 2]))
 
     chart = altair_example()
     chart.mark = 'point'
     chart.data.values[0]['x'] = 'C'
     pane.object = chart
-    point_example = dict(vega_example, mark='point')
-    if altair_version >= '4.0.0':
+    point_example = dict(vega_example, data={},  mark='point')
+    if altair_version >= Version('4.0.0'):
         point_example['config'] = vega4_config
     assert dict(model.data, **blank_schema) == dict(point_example, **blank_schema)
     cds_data = model.data_sources['data'].data
-    assert np.array_equal(cds_data['x'], np.array(['C', 'B', 'C', 'D', 'E'])) 
+    assert np.array_equal(cds_data['x'], np.array(['C', 'B', 'C', 'D', 'E']))
     assert np.array_equal(cds_data['y'], np.array([5, 3, 6, 7, 2]))
 
     pane._cleanup(model)

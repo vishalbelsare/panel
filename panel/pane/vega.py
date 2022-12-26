@@ -1,14 +1,25 @@
+from __future__ import annotations
+
 import sys
 
-import param
+from typing import (
+    TYPE_CHECKING, Any, ClassVar, Mapping, Optional,
+)
+
 import numpy as np
+import param
 
 from bokeh.models import ColumnDataSource
 from pyviz_comms import JupyterComm
 
+from ..util import lazy_load
 from ..viewable import Layoutable
-from ..util import lazy_load, string_types
 from .base import PaneBase
+
+if TYPE_CHECKING:
+    from bokeh.document import Document
+    from bokeh.model import Model
+    from pyviz_comms import Comm
 
 
 def ds_as_cds(dataset):
@@ -27,19 +38,72 @@ def ds_as_cds(dataset):
     return data
 
 
+_containers = ['hconcat', 'vconcat', 'layer']
+
+def _isin(obj, attr):
+    if isinstance(obj, dict):
+        return attr in obj
+    else:
+        return hasattr(obj, attr)
+
+def _get_type(spec):
+    if isinstance(spec, dict):
+        return spec.get('type', 'interval')
+    else:
+        return getattr(spec, 'type', 'interval')
+
+
+def _get_selections(obj):
+    selections = {}
+    if _isin(obj, 'selection'):
+        try:
+            selections.update({
+                name: _get_type(spec)
+                for name, spec in obj['selection'].items()
+            })
+        except (AttributeError, TypeError):
+            pass
+    for c in _containers:
+        if _isin(obj, c):
+            for subobj in obj[c]:
+                selections.update(_get_selections(subobj))
+    return selections
+
+
 class Vega(PaneBase):
     """
-    Vega panes allow rendering Vega plots and traces.
+    The Vega pane renders Vega-lite based plots (including those from Altair)
+    inside a panel.
 
-    For efficiency any array objects found inside a Figure are added
-    to a ColumnDataSource which allows using binary transport to sync
-    the figure on bokeh server and via Comms.
+    Note
+
+    - to use the `Vega` pane, the Panel `extension` has to be
+    loaded with 'vega' as an argument to ensure that vega.js is initialized.
+    - it supports selection events
+    - it optimizes the plot rendering by using binary serialization for any
+    array data found on the Vega/Altair object, providing huge speedups over
+    the standard JSON serialization employed by Vega natively.
+
+    Reference: https://panel.holoviz.org/reference/panes/Vega.html
+
+    :Example:
+
+    >>> pn.extension('vega')
+    >>> Vega(some_vegalite_dict_or_altair_object, height=240)
     """
+
+    debounce = param.ClassSelector(default=20, class_=(int, dict), doc="""
+        Declares the debounce time in milliseconds either for all
+        events or if a dictionary is provided for individual events.""")
 
     margin = param.Parameter(default=(5, 5, 30, 5), doc="""
         Allows to create additional space around the component. May
         be specified as a two-tuple of the form (vertical, horizontal)
         or a four-tuple (top, right, bottom, left).""")
+
+    selection = param.ClassSelector(class_=param.Parameterized, doc="""
+        The Selection object reflects any selections available on the
+        supplied vega plot into Python.""")
 
     show_actions = param.Boolean(default=False, doc="""
         Whether to show Vega actions.""")
@@ -48,9 +112,39 @@ class Vega(PaneBase):
         'excel', 'ggplot2', 'quartz', 'vox', 'fivethirtyeight', 'dark',
         'latimes', 'urbaninstitute', 'googlecharts'])
 
-    priority = 0.8
+    priority: ClassVar[float | bool | None] = 0.8
 
-    _updates = True
+    _rename: ClassVar[Mapping[str, str | None]] = {'selection': None, 'debounce': None}
+
+    _updates: ClassVar[bool] = True
+
+    def __init__(self, object=None, **params):
+        super().__init__(object, **params)
+        self.param.watch(self._update_selections, ['object'])
+        self._update_selections()
+
+    @property
+    def _selections(self):
+        return _get_selections(self.object)
+
+    @property
+    def _throttle(self):
+        default = self.param.debounce.default
+        if isinstance(self.debounce, dict):
+            throttle = {
+                sel: self.debounce.get(sel, default)
+                for sel in self._selections
+            }
+        else:
+            throttle = {sel: self.debounce or default for sel in self._selections}
+        return throttle
+
+    def _update_selections(self, *args):
+        params = {
+            e: param.Dict() if stype == 'interval' else param.List()
+            for e, stype in self._selections.items()
+        }
+        self.selection = type('Selection', (param.Parameterized,), params)()
 
     @classmethod
     def is_altair(cls, obj):
@@ -60,7 +154,7 @@ class Vega(PaneBase):
         return False
 
     @classmethod
-    def applies(cls, obj):
+    def applies(cls, obj: Any) -> float | bool | None:
         if isinstance(obj, dict) and 'vega' in obj.get('$schema', '').lower():
             return True
         return cls.is_altair(obj)
@@ -109,7 +203,6 @@ class Vega(PaneBase):
                 if 'values' in d:
                     sources[d['name']] = ColumnDataSource(data=ds_as_cds(d.pop('values')))
 
-
     @classmethod
     def _get_dimensions(cls, json, props):
         if json is None:
@@ -129,7 +222,7 @@ class Vega(PaneBase):
                 view['height'] = size_config[h]
 
         for p in ('width', 'height'):
-            if p not in view or isinstance(view[p], string_types):
+            if p not in view or isinstance(view[p], str):
                 continue
             if props.get(p) is None or p in view and props.get(p) < view[p]:
                 v = view[p]
@@ -144,7 +237,18 @@ class Vega(PaneBase):
         elif responsive_height:
             props['sizing_mode'] = 'stretch_height'
 
-    def _get_model(self, doc, root=None, parent=None, comm=None):
+    def _process_event(self, event):
+        name = event.data['type']
+        stype = self._selections.get(name)
+        value = event.data['value']
+        if stype != 'interval':
+            value = list(value)
+        self.selection.param.update(**{name: value})
+
+    def _get_model(
+        self, doc: Document, root: Optional[Model] = None,
+        parent: Optional[Model] = None, comm: Optional[Comm] = None
+    ) -> Model:
         VegaPlot = lazy_load('panel.models.vega', 'VegaPlot', isinstance(comm, JupyterComm), root)
         sources = {}
         if self.object is None:
@@ -154,13 +258,17 @@ class Vega(PaneBase):
             self._get_sources(json, sources)
         props = self._process_param_change(self._init_params())
         self._get_dimensions(json, props)
-        model = VegaPlot(data=json, data_sources=sources, **props)
+        model = VegaPlot(
+            data=json, data_sources=sources, events=list(self._selections),
+            throttle=self._throttle, **props
+        )
+        self._register_events('vega_event', model=model, doc=doc, comm=comm)
         if root is None:
             root = model
         self._models[root.ref['id']] = (model, parent)
         return model
 
-    def _update(self, ref=None, model=None):
+    def _update(self, ref: str, model: Model) -> None:
         if self.object is None:
             json = None
         else:
@@ -168,6 +276,8 @@ class Vega(PaneBase):
             self._get_sources(json, model.data_sources)
         props = {p : getattr(self, p) for p in list(Layoutable.param)
                  if getattr(self, p) is not None}
+        props['throttle'] = self._throttle
+        props['events'] = list(self._selections)
         self._get_dimensions(json, props)
         props['data'] = json
         model.update(**props)

@@ -1,4 +1,3 @@
-import os
 import sys
 import traceback as tb
 
@@ -6,12 +5,12 @@ from collections import OrderedDict, defaultdict
 
 import param
 
-from .layout import Row, Column, HSpacer, VSpacer
-from .pane import HoloViews, Pane, Markdown
-from .widgets import Button, Select
+from .layout import Column, Row
+from .pane import HoloViews, Markdown
 from .param import Param
 from .util import param_reprs
 from .viewable import Viewer
+from .widgets import Button, Select
 
 
 class PipelineError(RuntimeError):
@@ -204,12 +203,6 @@ class Pipeline(Viewer):
             sizing_mode='stretch_width'
         )
         self.network.object = self._make_progress()
-        spinner = Pane(os.path.join(os.path.dirname(__file__), 'assets', 'spinner.gif'))
-        self._spinner_layout = Row(
-            HSpacer(),
-            Column(VSpacer(), spinner, VSpacer()),
-            HSpacer()
-        )
         self.stage = Row()
         self.layout = Column(self.header, self.stage, sizing_mode='stretch_width')
 
@@ -410,7 +403,7 @@ class Pipeline(Viewer):
     def _next(self):
         prev_state, prev_stage = self._state, self._stage
         self._stage = self._next_stage
-        self.stage[0] = self._spinner_layout
+        self.stage.loading = True
         try:
             self.stage[0] = self._init_stage()
         except Exception as e:
@@ -434,6 +427,7 @@ class Pipeline(Viewer):
                 self._next()
         finally:
             self._update_progress()
+            self.stage.loading = False
 
     @param.depends('previous', watch=True)
     def _previous(self):
@@ -467,7 +461,7 @@ class Pipeline(Viewer):
 
     def _make_progress(self):
         import holoviews as hv
-        import holoviews.plotting.bokeh # noqa
+        import holoviews.plotting.bokeh  # noqa
 
         if self._graph:
             root = get_root(self._graph)
@@ -626,3 +620,8 @@ class Pipeline(Viewer):
             self.stage[:] = [self._init_stage()]
         self._update_progress()
         self._update_button()
+
+
+__all__ = (
+    "Pipeline",
+)

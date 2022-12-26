@@ -5,6 +5,8 @@ import pathlib
 
 import param
 
+from ...config import config
+from ...io.resources import JS_URLS
 from ...layout import Card
 from ..base import BasicTemplate
 from ..theme import DarkTheme, DefaultTheme
@@ -30,11 +32,11 @@ class GoldenTemplate(BasicTemplate):
 
     _resources = {
         'css': {
-            'goldenlayout': "https://golden-layout.com/files/latest/css/goldenlayout-base.css",
+            'goldenlayout': f"{config.npm_cdn}/golden-layout@1.5.9/src/css/goldenlayout-base.css",
         },
         'js': {
-            'jquery': "http://code.jquery.com/jquery-3.5.1.min.js",
-            'goldenlayout': "https://golden-layout.com/files/latest/js/goldenlayout.js"
+            'jquery': JS_URLS['jQuery'],
+            'goldenlayout': f"{config.npm_cdn}/golden-layout@1.5.9/dist/goldenlayout.min.js"
         }
     }
 

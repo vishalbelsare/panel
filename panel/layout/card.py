@@ -1,13 +1,31 @@
+from __future__ import annotations
+
+from typing import (
+    TYPE_CHECKING, ClassVar, List, Mapping, Type,
+)
+
 import param
 
 from ..models import Card as BkCard
-from .base import Column, Row, ListPanel
+from .base import Column, ListPanel, Row
+
+if TYPE_CHECKING:
+    from bokeh.model import Model
 
 
 class Card(Column):
     """
-    A Card layout allows arranging multiple panel objects in a
+    A `Card` layout allows arranging multiple panel objects in a
     collapsible, vertical container with a header bar.
+
+    Reference: https://panel.holoviz.org/reference/layouts/Card.html
+
+    :Example:
+
+    >>> pn.Card(
+    ...     some_widget, some_pane, some_python_object,
+    ...     title='Card', background='WhiteSmoke'
+    ... )
     """
 
     active_header_background = param.String(doc="""
@@ -38,6 +56,9 @@ class Card(Column):
     header_css_classes = param.List(['card-header'], doc="""
         CSS classes to apply to the header element.""")
 
+    hide_header = param.Boolean(default=False, doc="""
+        Whether to skip rendering the header.""")
+
     title_css_classes = param.List(['card-title'], doc="""
         CSS classes to apply to the header title.""")
 
@@ -47,11 +68,13 @@ class Card(Column):
         A title to be displayed in the Card header, will be overridden
         by the header if defined.""")
 
-    _bokeh_model = BkCard
-    
-    _linked_props = ['collapsed']
+    _bokeh_model: ClassVar[Type[Model]] = BkCard
 
-    _rename = dict(Column._rename, title=None, header=None, title_css_classes=None)
+    _linked_props: ClassVar[List[str]] = ['collapsed']
+
+    _rename: ClassVar[Mapping[str, str | None]] = dict(
+        Column._rename, title=None, header=None, title_css_classes=None
+    )
 
     def __init__(self, *objects, **params):
         self._header_layout = Row(css_classes=['card-header-row'],
@@ -61,7 +84,7 @@ class Card(Column):
         self.param.watch(self._update_header, ['title', 'header', 'title_css_classes'])
         self._update_header()
 
-    def _cleanup(self, root):
+    def _cleanup(self, root: Model | None = None) -> None:
         super()._cleanup(root)
         self._header_layout._cleanup(root)
 

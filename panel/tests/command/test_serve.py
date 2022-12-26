@@ -3,12 +3,13 @@ import os
 import re
 import subprocess
 import sys
-
-import pytest
-import requests
+import time
 
 from queue import Empty, Queue
 from threading import Thread
+
+import pytest
+import requests
 
 not_windows = pytest.mark.skipif(sys.platform == 'win32', reason="Does not work on Windows")
 
@@ -17,6 +18,7 @@ not_windows = pytest.mark.skipif(sys.platform == 'win32', reason="Does not work 
 def run_panel_serve(args):
     cmd = [sys.executable, "-m", "panel", "serve"] + args
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=False)
+    time.sleep(1)
     try:
         yield p
     except Exception as e:
@@ -112,4 +114,3 @@ def test_autoreload_app(py_file):
         r2 = requests.get(f"http://localhost:{port}/{app_name}")
         assert r2.status_code == 200
         assert "<title>B</title>" in r2.content.decode('utf-8')
-

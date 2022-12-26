@@ -1,22 +1,21 @@
-import pytest
-
 import param
+import pytest
 
 from bokeh.models import Column as BkColumn, Div, Row as BkRow
 
 from panel.layout import (
-    Accordion, Card, Column, Row, Tabs, Spacer, WidgetBox
+    Accordion, Card, Column, Row, Spacer, Tabs, WidgetBox,
 )
 from panel.layout.base import ListPanel, NamedListPanel
-from panel.param import Param
 from panel.pane import Bokeh
-from panel.tests.util import check_layoutable_properties, py3_only
+from panel.param import Param
+from panel.tests.util import check_layoutable_properties
+from panel.widgets import Debugger
 
-
+excluded = (NamedListPanel, Debugger)
 all_panels = [w for w in param.concrete_descendents(ListPanel).values()
-               if not w.__name__.startswith('_') and w is not NamedListPanel]
+               if not w.__name__.startswith('_') and not issubclass(w, excluded)]
 
-@py3_only
 @pytest.mark.parametrize('panel', all_panels)
 def test_layout_signature(panel):
     from inspect import signature
@@ -114,7 +113,7 @@ def test_layout_add_error(panel, document, comm):
     div2 = Div()
     layout = panel(div1, div2)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         layout + 1
 
 
@@ -430,7 +429,7 @@ def test_layout_clone_objects_in_kwargs(panel):
     div2 = Div()
     layout = panel(div1, div2)
     clone = layout.clone(
-        objects=(div2, div1), 
+        objects=(div2, div1),
         width=400, sizing_mode='stretch_height'
     )
 

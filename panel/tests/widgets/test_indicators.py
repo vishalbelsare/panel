@@ -1,6 +1,9 @@
 import pytest
 
-from panel.widgets.indicators import Dial, Gauge, Number
+from panel.widgets.indicators import (
+    Dial, Gauge, Number, Tqdm,
+)
+
 
 def test_number_none(document, comm):
     number = Number(value=None, name='Value')
@@ -57,7 +60,7 @@ def test_dial_none(document, comm):
 
     assert list(cds.data['starts']) == [9.861110273767961, 9.861110273767961]
     assert list(cds.data['ends']) == [9.861110273767961, 5.846852994181004]
-    
+
     text_cds = model.select(name='label_source')
 
     assert text_cds.data['text'] == ['Value', '-%', '0%', '100%']
@@ -66,7 +69,7 @@ def test_dial_none(document, comm):
 
     assert text_cds.data['text'] == ['Value', 'nan%', '0%', '100%']
 
-    
+
 def test_dial_thresholds_with_bounds(document, comm):
     dial = Dial(value=25, colors=[(0.33, 'green'), (0.66, 'yellow'), (1, 'red')],
                 bounds=(25, 75))
@@ -98,3 +101,10 @@ def test_gauge_bounds():
 
     with pytest.raises(ValueError):
         dial.value = 100
+
+def test_tqdm_color():
+    tqdm = Tqdm()
+    tqdm.text_pane.style={'color': 'green'}
+    for _ in tqdm(range(0,2)):
+        pass
+    assert tqdm.text_pane.style["color"]=="green"

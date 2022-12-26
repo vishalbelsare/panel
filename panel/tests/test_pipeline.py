@@ -1,15 +1,15 @@
-from distutils.version import LooseVersion
-
-import pytest
 import param
+import pytest
 
-from panel.layout import Row, Column
+from packaging.version import Version
+
+from panel.layout import Column, Row
 from panel.pane import HoloViews
 from panel.param import ParamMethod
 from panel.pipeline import Pipeline, find_route
 from panel.widgets import Button, Select
 
-if LooseVersion(param.__version__) < '1.8.2':
+if Version(param.__version__) < Version('1.8.2'):
     pytestmark = pytest.mark.skip("skipping if param version < 1.8.2", allow_module_level=True)
 
 try:
@@ -81,7 +81,7 @@ def test_find_route():
     assert find_route(graph, 'A', 'I') == ['C', 'D', 'G', 'I']
     assert find_route(graph, 'B', 'I') is None
     assert find_route(graph, 'D', 'H') == ['F', 'H']
-    
+
 
 def test_pipeline_from_classes():
     pipeline = Pipeline([('Stage 1', Stage1), ('Stage 2', Stage2)])
@@ -103,7 +103,6 @@ def test_pipeline_from_classes():
     assert len(graph) == 1
     labels = hv_obj.get(1)
     assert isinstance(labels, hv.Labels)
-    print(labels)
     assert list(labels['Stage']) == ['Stage 1', 'Stage 2']
 
     stage = layout[1][0]
@@ -144,7 +143,6 @@ def test_pipeline_from_instances():
     assert len(graph) == 1
     labels = hv_obj.get(1)
     assert isinstance(labels, hv.Labels)
-    print(labels)
     assert list(labels['Stage']) == ['Stage 1', 'Stage 2']
 
     stage = layout[1][0]
@@ -188,7 +186,6 @@ def test_pipeline_from_add_stages():
     assert len(graph) == 1
     labels = hv_obj.get(1)
     assert isinstance(labels, hv.Labels)
-    print(labels)
     assert list(labels['Stage']) == ['Stage 1', 'Stage 2']
 
     stage = layout[1][0]
@@ -305,7 +302,7 @@ def test_pipeline_error_condition():
     pipeline._next()
 
     assert isinstance(pipeline.error[0], Button)
-    
+
     stage2b.root = 2
 
     pipeline._next()
@@ -332,11 +329,11 @@ def test_pipeline_previous_follows_initial_path():
     pipeline._next()
 
     assert pipeline._route == ['Stage 1', 'Stage 2b']
-    
+
     pipeline._next()
 
     assert pipeline._route == ['Stage 1', 'Stage 2b', 'Stage 3']
-    
+
     pipeline._previous()
 
     assert pipeline._stage == 'Stage 2b'
@@ -375,7 +372,6 @@ def test_pipeline_network_diagram_states():
 
     pipeline.define_graph({'Stage 1': ('Stage 2', 'Stage 2b')})
 
-    print(pipeline.network.object)
     [s1, s2, s2b] = pipeline.network.object.get(0).nodes['State']
 
     assert s1 == 'active'

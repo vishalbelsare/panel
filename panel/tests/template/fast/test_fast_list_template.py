@@ -1,14 +1,15 @@
-import panel as pn
-
 from bokeh.document import Document
 from holoviews import opts
+
+import panel as pn
 
 from panel.pane import HoloViews, Markdown
 from panel.template.fast.list import FastListDarkTheme, FastListTemplate
 from panel.tests.template.fast.test_fast_grid_template import (
-    INFO, _create_hvplot, _fast_button_card, _sidebar_items)
+    INFO, _create_hvplot, _fast_button_card, _sidebar_items,
+)
 
-ACCENT_COLOR = "purple"
+ACCENT_COLOR = "#D2386C"
 
 opts.defaults(opts.Ellipse(line_width=3, color=ACCENT_COLOR))
 
@@ -31,13 +32,11 @@ def test_accepts_colors_by_name():
     )
     template._update_vars()
 
-def test_app():
+def manualtest_app():
     app = FastListTemplate(
         title="FastListTemplate w. #ORSOME colors",
         site="Panel",
-        accent_base_color=ACCENT_COLOR,
-        header_background=ACCENT_COLOR,
-        header_accent_base_color="#FFFFFF",
+        accent=ACCENT_COLOR,
         main_layout="",
         shadow=True,
     )
@@ -51,7 +50,13 @@ def test_app():
 
     return app
 
+def test_accent():
+    accent = "yellow"
+    template = pn.template.FastListTemplate(accent=accent)
+    assert template.accent_base_color==accent
+    assert template.header_background==accent
+
 
 if __name__.startswith("bokeh"):
     pn.extension(sizing_mode="stretch_width")
-    test_app().servable()
+    manualtest_app().servable()

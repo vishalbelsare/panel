@@ -1,21 +1,42 @@
 """
 Layout component to lay out objects in a set of tabs.
 """
+from __future__ import annotations
+
 from collections import defaultdict
+from typing import (
+    TYPE_CHECKING, ClassVar, List, Mapping, Type,
+)
 
 import param
 
-from bokeh.models import (
-    Spacer as BkSpacer, Panel as BkPanel, Tabs as BkTabs
-)
+from bokeh.models import Panel as BkPanel, Spacer as BkSpacer
 
+from ..models import Tabs as BkTabs
 from ..viewable import Layoutable
 from .base import NamedListPanel
+
+if TYPE_CHECKING:
+    from bokeh.model import Model
 
 
 class Tabs(NamedListPanel):
     """
-    Panel of Viewables to be displayed in separate tabs.
+    The `Tabs` layout allows switching between multiple objects by clicking
+    on the corresponding tab header.
+
+    Tab labels may be defined explicitly as part of a tuple or will be
+    inferred from the `name` parameter of the tab’s contents.
+
+    Like `Column` and `Row`, `Tabs` has a list-like API with methods to
+    `append`, `extend`, `clear`, `insert`, `pop`, `remove` and `__setitem__`,
+    which make it possible to interactively update and modify the tabs.
+
+    Reference: https://panel.holoviz.org/reference/layouts/Tabs.html
+
+    :Example:
+
+    >>> pn.Tabs(('Scatter', plot1), some_pane_with_a_name)
     """
 
     closable = param.Boolean(default=False, doc="""
@@ -32,21 +53,25 @@ class Tabs(NamedListPanel):
 
     width = param.Integer(default=None, bounds=(0, None))
 
-    _bokeh_model = BkTabs
+    _bokeh_model: ClassVar[Type[Model]] = BkTabs
 
-    _js_transforms = {'tabs': """
+    _js_transforms: ClassVar[Mapping[str, str]] = {'tabs': """
     var ids = [];
     for (var t of value) {{ ids.push(t.id) }};
     var value = ids;
     """}
 
-    _linked_props = ['active', 'tabs']
+    _linked_props: ClassVar[List[str]] = ['active', 'tabs']
 
-    _manual_params = ['closable']
+    _manual_params: ClassVar[List[str]] = ['closable']
 
-    _rename = {'name': None, 'objects': 'tabs', 'dynamic': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {
+        'name': None, 'objects': 'tabs', 'dynamic': None
+    }
 
-    _source_transforms = {'dynamic': None, 'objects': None}
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {
+        'dynamic': None, 'objects': None
+    }
 
     def __init__(self, *objects, **params):
         super().__init__(*objects, **params)
@@ -58,12 +83,13 @@ class Tabs(NamedListPanel):
         self.param.active.bounds = (0, len(event.new)-1)
         super()._update_names(event)
 
-    def _cleanup(self, root):
+    def _cleanup(self, root: Model | None = None) -> None:
         super()._cleanup(root)
-        if root.ref['id'] in self._panels:
-            del self._panels[root.ref['id']]
-        if root.ref['id'] in self._rendered:
-            del self._rendered[root.ref['id']]
+        if root:
+            if root.ref['id'] in self._panels:
+                del self._panels[root.ref['id']]
+            if root.ref['id'] in self._rendered:
+                del self._rendered[root.ref['id']]
 
     @property
     def _preprocess_params(self):
@@ -158,8 +184,7 @@ class Tabs(NamedListPanel):
                 hasattr(panel, 'child') and isinstance(panel.child, BkSpacer) and
                 panel.child.tags == ['hidden']
             )
-            if prev_hidden and not hidden and pref in rendered:
-                panel = rendered[pref]
+
             # If object has not changed, we have not toggled between
             # hidden and unhidden state or the tabs are not
             # dynamic then reuse the panel
@@ -168,7 +193,9 @@ class Tabs(NamedListPanel):
                 new_models.append(panel)
                 continue
 
-            if hidden:
+            if prev_hidden and not hidden and pref in rendered:
+                child = rendered[pref]
+            elif hidden:
                 child = BkSpacer(**{k: v for k, v in pane.param.values().items()
                                     if k in Layoutable.param and v is not None})
                 child.tags = ['hidden']
@@ -177,6 +204,7 @@ class Tabs(NamedListPanel):
                     rendered[pref] = child = pane._get_model(doc, root, model, comm)
                 except RerenderError:
                     return self._get_objects(model, current_objects[:i], doc, root, comm)
+
             panel = panels[pref] = BkPanel(
                 title=name, name=pane.name, child=child, closable=self.closable
             )

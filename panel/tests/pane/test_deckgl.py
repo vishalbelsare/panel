@@ -9,7 +9,7 @@ except Exception:
 pydeck_available = pytest.mark.skipif(pydeck is None, reason="requires pydeck")
 
 from panel.models.deckgl import DeckGLPlot
-from panel.pane import Pane, PaneBase, DeckGL
+from panel.pane import DeckGL, Pane, PaneBase
 
 
 @pydeck_available
@@ -20,18 +20,21 @@ def test_get_pydeck_pane_type_from_deck():
 
 @pydeck_available
 def test_pydeck_pane_deck(document, comm):
-    deck = pydeck.Deck(tooltip=True, mapbox_key='ABC')
+    deck = pydeck.Deck(tooltip=True, api_keys={'mapbox': 'ABC'})
     pane = Pane(deck)
 
     # Create pane
     model = pane.get_root(document, comm=comm)
     assert isinstance(model, DeckGLPlot)
     assert pane._models[model.ref["id"]][0] is model
-    assert model.data == {
-        'description': None,
-        'mapStyle': 'mapbox://styles/mapbox/dark-v9',
+    expected = {
+        'mapProvider': 'carto',
+        'mapStyle': 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
         'views': [{'@@type': 'MapView', 'controller': True}]
     }
+    if 'tooltip' in model.data: # Handle pydeck 0.8.0b4
+        expected['tooltip'] = True
+    assert model.data == expected
     assert model.mapbox_api_key == deck.mapbox_key
     assert model.tooltip == deck.deck_widget.tooltip
 

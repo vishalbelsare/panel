@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 from collections import OrderedDict
+from typing import ClassVar, Mapping
 
 import param
 
+from ..config import config
 from ..io.resources import bundled_files
 from ..reactive import ReactiveHTML
 from ..util import classproperty
@@ -10,8 +14,25 @@ from .grid import GridSpec
 
 class GridStack(ReactiveHTML, GridSpec):
     """
-    The GridStack layout builds on the GridSpec component and
-    gridstack.js to allow resizing and dragging items in the grid.
+    The `GridStack` layout allows arranging multiple Panel objects in a grid
+    using a simple API to assign objects to individual grid cells or to a grid
+    span.
+
+    Other layout containers function like lists, but a `GridSpec` has an API
+    similar to a 2D array, making it possible to use 2D assignment to populate,
+    index, and slice the grid.
+
+    Reference: https://panel.holoviz.org/reference/layouts/GridStack.html
+
+    :Example:
+
+    >>> pn.extension('gridstack')
+    >>> gstack = GridStack(sizing_mode='stretch_both')
+    >>> gstack[ : , 0: 3] = pn.Spacer(background='red',    margin=0)
+    >>> gstack[0:2, 3: 9] = pn.Spacer(background='green',  margin=0)
+    >>> gstack[2:4, 6:12] = pn.Spacer(background='orange', margin=0)
+    >>> gstack[4:6, 3:12] = pn.Spacer(background='blue',   margin=0)
+    >>> gstack[0:2, 9:12] = pn.Spacer(background='purple', margin=0)
     """
 
     allow_resize = param.Boolean(default=True, doc="""
@@ -27,6 +48,8 @@ class GridStack(ReactiveHTML, GridSpec):
     width = param.Integer(default=None)
 
     height = param.Integer(default=None)
+
+    _extension_name = 'gridstack'
 
     _template = """
     <div id="grid" class="grid-stack">
@@ -81,17 +104,17 @@ class GridStack(ReactiveHTML, GridSpec):
     }
 
     __css_raw__ = [
-        'https://cdn.jsdelivr.net/npm/gridstack@4.2.5/dist/gridstack.min.css',
-        'https://cdn.jsdelivr.net/npm/gridstack@4.2.5/dist/gridstack-extra.min.css'
+        f'{config.npm_cdn}/gridstack@4.2.5/dist/gridstack.min.css',
+        f'{config.npm_cdn}/gridstack@4.2.5/dist/gridstack-extra.min.css'
     ]
 
     __javascript_raw__ = [
-        'https://cdn.jsdelivr.net/npm/gridstack@4.2.5/dist/gridstack-h5.js'
+        f'{config.npm_cdn}/gridstack@4.2.5/dist/gridstack-h5.js'
     ]
 
     __js_require__ = {
         'paths': {
-            'gridstack': 'https://cdn.jsdelivr.net/npm/gridstack@4.2.5/dist/gridstack-h5'
+            'gridstack': f'{config.npm_cdn}/gridstack@4.2.5/dist/gridstack-h5'
         },
         'exports': {
             'gridstack': 'GridStack'
@@ -109,7 +132,7 @@ class GridStack(ReactiveHTML, GridSpec):
             'GridStack': cls.__javascript__[0:1],
         }
 
-    _rename = {}
+    _rename: ClassVar[Mapping[str, str | None]] = {}
 
     @classproperty
     def __javascript__(cls):

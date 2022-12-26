@@ -3,6 +3,7 @@
 <!-- goes in body -->
 {% block preamble %}
 {% if app_favicon %}<link rel="icon" href="{{ app_favicon }}" type="{{favicon_type}}">{% endif %}
+{% if manifest %}<link rel="manifest" href="{{ manifest }}">{% endif %}
 {% if meta_name %}<meta name="name" content="{{ meta_name }}">{% endif %}
 {% if meta_description %}<meta name="description" content="{{ meta_description }}">{% endif %}
 {% if meta_keywords %}<meta name="keywords" content="{{ meta_keywords }}">{% endif %}
@@ -42,8 +43,8 @@
     <div class="app-header">
       {% if app_logo %}<a href="{{ site_url }}"><img src="{{ app_logo }}" class="app-logo"></a>{% endif %}
       {% if site_title %}<a class="title" href="{{ site_url }}" >{{ site_title }}</a>{% endif %}
-      {% if site_title and app_title%}<span class="title">&nbsp;-&nbsp;</span>{% endif %}
-      {% if app_title %}<a class="title" href="" >{{ app_title }}</a>{% endif %}
+      {% if site_title and app_title%}<span class="title">-</span>{% endif %}
+      {% if app_title %}<a class="title" href="">{{ app_title }}</a>{% endif %}
     </div>
 	<section class="header-contents">
 	  {% for doc in docs %}
@@ -102,7 +103,7 @@
             content: [
               {% for doc in docs %}
               {% for root in doc.roots %}
-              {% if "main" in root.tags%}
+              {% if "main" in root.tags %}
               {
                 type: 'component',
                 componentName: 'view',
@@ -143,6 +144,16 @@
     container.getElement().html(componentState.model);
     container.on("resize", resize_dispatcher)
   })
+
+  // Absolute hackery to get GoldenLayout to initialize even though
+  // document is not ready. Without this bokeh will complain that
+  // DOM nodes to render roots into are not initialized in time.
+  Object.defineProperty(document, 'readyState', {
+    get() { return readyState },
+    set(value) { return readyState = value },
+  });
+  document.readyState = 'complete'
+
   myLayout.init()
   window.addEventListener('resize', (event) => {
     if (!resizing) {
@@ -167,5 +178,8 @@
 {{ embed(roots.js_area) }}
 {{ embed(roots.actions) }}
 {{ embed(roots.location) }}
+{% if notifications %}
+{{ embed(roots.notifications) }}
+{% endif %}
 
 {% endblock %}

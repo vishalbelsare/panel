@@ -1,10 +1,15 @@
 """
 Layout components to lay out objects in a grid.
 """
+from __future__ import annotations
+
 import math
 
 from collections import OrderedDict, namedtuple
 from functools import partial
+from typing import (
+    TYPE_CHECKING, Any, ClassVar, Dict, Mapping, Optional,
+)
 
 import numpy as np
 import param
@@ -12,14 +17,33 @@ import param
 from bokeh.models import Box as BkBox, GridBox as BkGridBox
 
 from ..io.model import hold
-from .base import _col, _row, ListPanel, Panel
+from .base import (
+    ListPanel, Panel, _col, _row,
+)
 
+if TYPE_CHECKING:
+    from bokeh.document import Document
+    from bokeh.model import Model
+    from pyviz_comms import Comm
 
 
 class GridBox(ListPanel):
     """
-    List-like Grid which wraps depending on the specified number of
-    rows or columns.
+    The `GridBox` is a list-like layout (unlike `GridSpec`) that wraps objects
+    into a grid according to the specified `nrows` and `ncols` parameters.
+
+    It has a list-like API with methods to `append`, `extend`, `clear`,
+    `insert`, `pop`, `remove` and `__setitem__`, which makes it possible to
+    interactively update and modify the layout.
+
+    Reference: https://panel.holoviz.org/reference/layouts/GridBox.html
+
+    :Example:
+
+    >>> pn.GridBox(
+    ...    python_object_1, python_object_2, ...,
+    ...    python_object_24, ncols=6
+    ... )
     """
 
     nrows = param.Integer(default=None, bounds=(0, None), doc="""
@@ -30,7 +54,7 @@ class GridBox(ListPanel):
 
     _bokeh_model = BkGridBox
 
-    _rename = {'objects': 'children', 'nrows': None, 'ncols': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {'objects': 'children', 'nrows': None, 'ncols': None}
 
     _source_transforms = {'scroll': None, 'objects': None}
 
@@ -138,7 +162,10 @@ class GridBox(ListPanel):
         self._link_props(model, self._linked_props, doc, root, comm)
         return model
 
-    def _update_model(self, events, msg, root, model, doc, comm=None):
+    def _update_model(
+        self, events: Dict[str, param.parameterized.Event], msg: Dict[str, Any],
+        root: Model, model: Model, doc: Document, comm: Optional[Comm]
+    ) -> None:
         from ..io import state
 
         msg = dict(msg)
@@ -189,7 +216,7 @@ class GridSpec(Panel):
 
     _source_transforms = {'objects': None, 'mode': None}
 
-    _rename = {'objects': 'children', 'mode': None, 'ncols': None, 'nrows': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {'objects': 'children', 'mode': None, 'ncols': None, 'nrows': None}
 
     _preprocess_params = ['objects']
 
@@ -310,7 +337,7 @@ class GridSpec(Panel):
                     grid[y, x] = {((y0, x0, y1, x1), obj)}
         return grid
 
-    def _cleanup(self, root):
+    def _cleanup(self, root: Model | None = None) -> None:
         super()._cleanup(root)
         for p in self.objects.values():
             p._cleanup(root)

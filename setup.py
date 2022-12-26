@@ -1,16 +1,17 @@
 #!/usr/bin/env python
-
+import json
 import os
 import shutil
 import sys
-import json
 
-from setuptools import setup, find_packages
+import pyct.build
+
+from setuptools import find_packages, setup
 from setuptools.command.develop import develop
 from setuptools.command.install import install
 from setuptools.command.sdist import sdist
 
-import pyct.build
+PANEL_LITE_BUILD = 'PANEL_LITE' in os.environ
 
 
 def get_setup_version(reponame):
@@ -35,6 +36,7 @@ def get_setup_version(reponame):
 
 def _build_paneljs():
     from bokeh.ext import build
+
     from panel.compiler import bundle_resources
     print("Building custom models:")
     panel_dir = os.path.join(os.path.dirname(__file__), "panel")
@@ -52,7 +54,8 @@ class CustomDevelopCommand(develop):
     """Custom installation for development mode."""
 
     def run(self):
-        _build_paneljs()
+        if not PANEL_LITE_BUILD:
+            _build_paneljs()
         develop.run(self)
 
 
@@ -60,7 +63,8 @@ class CustomInstallCommand(install):
     """Custom installation for install mode."""
 
     def run(self):
-        _build_paneljs()
+        if not PANEL_LITE_BUILD:
+            _build_paneljs()
         install.run(self)
 
 
@@ -68,7 +72,8 @@ class CustomSdistCommand(sdist):
     """Custom installation for sdist mode."""
 
     def run(self):
-        _build_paneljs()
+        if not PANEL_LITE_BUILD:
+            _build_paneljs()
         sdist.run(self)
 
 
@@ -87,7 +92,8 @@ try:
 
         def run(self):
             """Do nothing so the command intentionally fails."""
-            _build_paneljs()
+            if not PANEL_LITE_BUILD:
+                _build_paneljs()
             bdist_wheel.run(self)
 
     _COMMANDS['bdist_wheel'] = CustomBdistWheelCommand
@@ -104,31 +110,51 @@ install_requires = [
     'requests',
     'tqdm >=4.48.0',
     'pyct >=0.4.4',
-    'bleach'
+    'bleach',
+    'setuptools >=42',
+    'typing_extensions',
 ]
 
 _recommended = [
-    'notebook >=5.4',
+    'jupyterlab',
     'holoviews >1.14.1',
-    'matplotlib <3.4',
+    'matplotlib',
     'pillow',
     'plotly'
 ]
 
 _tests = [
+    # Test dependencies
     'flake8',
     'parameterized',
     'pytest',
-    'scipy',
-    'nbsmoke >=0.2.0',
+    'nbval',
+    'flaky',
+    'pytest-xdist',
     'pytest-cov',
-    'codecov',
+    'pre-commit',
+    'psutil',
+    # Libraries tested in unit tests
     'folium',
     'ipympl',
+    'scipy',
     'twine',
     'pandas >=1.3',
     'ipython >=7.0',
-    'holoviews'
+    'holoviews',
+    'diskcache',
+    'markdown-it-py',
+    'ipyvuetify',
+    'reacton',
+    # Added lxml temporarily as installing pyechars or idom on Python 3.11
+    # via pip tries to build it and fails. To be removed.
+    'lxml',
+    'numpy <1.24', # Avoid VTK test fail
+]
+
+_ui = [
+    'playwright',
+    'pytest-playwright'
 ]
 
 extras_require = {
@@ -142,23 +168,40 @@ extras_require = {
         'scikit-learn',
         'datashader',
         'jupyter_bokeh >=3.0.2',
-        'django',
+        'django <4',
         'channels',
-        'pyvista',
+        'pyvista<0.33',
         'ipywidgets',
         'ipywidgets_bokeh',
         'ipyvolume',
         'ipyleaflet',
+        'ipympl',
+        'folium',
         'xarray',
-        'pyinstrument >=4.0'
+        'pyinstrument >=4.0',
+        'aiohttp',
+        'croniter',
+        'graphviz',
+        'networkx >=2.5',
+        'pygraphviz',
+        'seaborn',
+        'pydeck',
+        'graphviz',
+        'lxml',
+        'python-graphviz',
+        'xgboost',
+        'ipyvuetify',
+        'reacton'
     ],
     'tests': _tests,
     'recommended': _recommended,
     'doc': _recommended + [
-        'nbsite >=0.7.0a4',
-        'graphviz',
-        'lxml'
-    ]
+        'nbsite >=0.7.2rc2',
+        'pydata-sphinx-theme <=0.9.0',
+        'sphinx-copybutton',
+        'sphinx-design',
+    ],
+    'ui': _ui
 }
 
 extras_require['all'] = sorted(set(sum(extras_require.values(), [])))
@@ -171,11 +214,13 @@ extras_require['all'] = sorted(set(sum(extras_require.values(), [])))
 extras_require['build'] = [
     'param >=1.9.2',
     'pyct >=0.4.4',
-    'setuptools >=30.3.0',
-    'bokeh >=2.0.0',
-    'pyviz_comms >=0.6.0',
+    'setuptools >=42',
+    'bokeh >=2.4.3,<2.5.0',
+    'pyviz_comms >=0.7.4',
+    'requests',
+    'packaging',
     'bleach',
-    'tqdm'
+    'tqdm >=4.48.0',
 ]
 
 setup_args = dict(
@@ -191,6 +236,9 @@ setup_args = dict(
     platforms=['Windows', 'Mac OS X', 'Linux'],
     license='BSD',
     url='http://panel.holoviz.org',
+    project_urls={
+        'Source': 'https://github.com/holoviz/panel',
+    },
     cmdclass=_COMMANDS,
     packages=find_packages(),
     include_package_data=True,
@@ -200,14 +248,21 @@ setup_args = dict(
             "etc/jupyter/jupyter_notebook_config.d",
             ["jupyter-config/jupyter_notebook_config.d/panel-client-jupyter.json"],
         ),
+        # like `jupyter server extension enable --sys-prefix`
+        (
+            "etc/jupyter/jupyter_server_config.d",
+            ["jupyter-config/jupyter_server_config.d/panel-client-jupyter.json"],
+        ),
     ],
     classifiers=[
         "License :: OSI Approved :: BSD License",
         "Development Status :: 5 - Production/Stable",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Operating System :: OS Independent",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
@@ -224,7 +279,7 @@ setup_args = dict(
         "Topic :: Office/Business",
         "Topic :: Office/Business :: Financial",
         "Topic :: Software Development :: Libraries"],
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     entry_points={
         'console_scripts': [
             'panel = panel.command:main'

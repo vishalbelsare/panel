@@ -92,7 +92,7 @@ img.app-logo {
 #sidebar {
   transition: all 0.2s cubic-bezier(0.945, 0.020, 0.270, 0.665);
   transform-origin: center left; /* Set the transformed position of sidebar to center left side. */
-  height: 100vh;
+  height: calc(100vh - 56px);
   overflow-y: scroll;
   padding: 10px;
   margin-right: 12px;
@@ -124,7 +124,7 @@ img.app-logo {
 .sidenav fast-menu {
   width: 100%;
 }
-.sidenav a {
+.sidenav fast-menu a {
   padding: 8px 8px 8px 32px;
   text-decoration: none;
   color: var(--neutral-foreground-rest);
@@ -133,7 +133,7 @@ img.app-logo {
   display: block;
   transition: 0.3s;
 }
-.sidenav a:hover {
+.sidenav fast-menu a:hover {
   color: #f1f1f1;
 }
 .sidenav fast-menu {

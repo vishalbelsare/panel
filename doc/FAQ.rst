@@ -26,11 +26,6 @@ If you want an even richer JavaScript-based representation where that's supporte
 For a detailed comparison between Panel and other dashboarding libraries see the `Comparisons page <about/comparisons.html>`__.
 
 
-**Q: What features are on the Panel Roadmap?**
-
-For an outline on any future plans for Panel see the `Roadmap <about/roadmap.html>`__.
-
-
 **Q: How does Panel relate to Bokeh?**
 
 **A:** Panel is built on infrastructure provided by Bokeh, specifically Bokeh's model base classes, layouts, widgets, and (optionally) its server. But Panel does not require using any of Bokeh's plotting support. This way you can make use of a solid, well supported low-level toolkit (Bokeh) to build apps and dashboards for your own plots from any supported library.
@@ -42,6 +37,9 @@ Conversely, what Panel adds on top of Bokeh is full bidirectional communication 
 
 **A:** This error usually means that you forgot to run panel.extension() in a notebook context to set up the code for communicating between JavaScript and Python.  It's easy to get confused and think you don't need that line, because notebooks will often work fine as long as *some* notebook somewhere in your Jupyter session has run the command, but the only reliable way to make the communication channels available is to make sure *every* notebook includes this command.
 
+**Q: How do I enable the panel widget on Jupyter Lab?**
+
+**A:** Run `jupyter serverextension enable panel.io.jupyter_server_extension`.
 
 **Q: Why is my object being shown using the wrong type of pane?**
 
@@ -81,7 +79,7 @@ When using the pandas plotting API we create the figure and axes in the same way
 
 **Q: How can I deploy a Panel app for others to use?**
 
-**A:** There are many options available; see the Deployment section of the user manual. The basic idea is if you can log into a machine and launch a web server process, you can use ``panel serve`` there 
+**A:** There are many options available; see the Deployment section of the user manual. The basic idea is if you can log into a machine and launch a web server process, you can use ``panel serve`` there
 
 
 **Q: Is Panel 'Shiny for Python'?**
@@ -199,7 +197,7 @@ The `Comparisons page <about/comparisons.html>`__ describes some of these differ
 |                                      | Voila           |                      | Voila           |                    |                        |                    |
 +--------------------------------------+-----------------+----------------------+-----------------+--------------------+------------------------+--------------------+
 
-Each of these libraries are free, open-source software packages, but all of them can be used with the commercial 
-`Anaconda Enterprise (AE5) <https://www.anaconda.com/enterprise/>`__ server product, and some can be used with other commercial servers 
+Each of these libraries are free, open-source software packages, but all of them can be used with the commercial
+`Anaconda Enterprise (AE5) <https://www.anaconda.com/enterprise/>`__ server product, and some can be used with other commercial servers
 (Shiny, with `Shiny Server <https://www.rstudio.com/products/shiny-server-pro>`__, Streamlit, with `Streamlit Teams`, and Dash, with
 `Dash Enterprise <https://plot.ly/dash>`__), to provide on-premises authenticated deployment within a private network.  Most of the servers (including Jupyter, Bokeh Server, Voila, and Dash) can be also deployed on the public sites `mybinder.org <https://mybinder.org>`__ or `heroku <https://www.heroku.com>`__.

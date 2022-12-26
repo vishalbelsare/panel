@@ -1,15 +1,22 @@
 """
 Defines utilities to save panel objects to files as HTML or PNG.
 """
-import io
+from __future__ import annotations
 
-from six import string_types
+import io
+import os
+
+from typing import (
+    IO, TYPE_CHECKING, Any, Dict, Iterable, List, Optional,
+)
 
 import bokeh
 
 from bokeh.document.document import Document
 from bokeh.embed.elements import html_page_for_render_items
-from bokeh.embed.util import OutputDocumentFor, standalone_docs_json_and_render_items
+from bokeh.embed.util import (
+    OutputDocumentFor, standalone_docs_json_and_render_items,
+)
 from bokeh.io.export import get_screenshot_as_png
 from bokeh.model import Model
 from bokeh.resources import CDN, INLINE, Resources as BkResources
@@ -20,9 +27,15 @@ from .embed import embed_state
 from .model import add_to_doc
 from .resources import (
     BASE_TEMPLATE, DEFAULT_TITLE, Bundle, Resources, bundle_resources,
-    set_resource_mode
+    set_resource_mode,
 )
 from .state import state
+
+if TYPE_CHECKING:
+    from bokeh.embed.standalone import ThemeLike
+    from jinja2 import Template
+
+    from ..viewable import Viewable
 
 #---------------------------------------------------------------------
 # Private API
@@ -45,7 +58,10 @@ else
 
 bokeh.io.export._WAIT_SCRIPT = _WAIT_SCRIPT
 
-def save_png(model, filename, resources=CDN, template=None, template_variables=None, timeout=5):
+def save_png(
+    model: Model, filename: str, resources=CDN, template=None,
+    template_variables=None, timeout: int = 5
+) -> None:
     """
     Saves a bokeh model to png
 
@@ -55,6 +71,8 @@ def save_png(model, filename, resources=CDN, template=None, template_variables=N
       Model to save to png
     filename: str
       Filename to save to
+    resources: str
+      Resources
     template:
       template file, as used by bokeh.file_html. If None will use bokeh defaults
     template_variables:
@@ -100,14 +118,14 @@ def save_png(model, filename, resources=CDN, template=None, template_variables=N
         if img.width == 0 or img.height == 0:
             raise ValueError("unable to save an empty image")
 
-        img.save(filename)
+        img.save(filename, format="png")
     except Exception:
         raise
     finally:
         if template:
             bokeh.io.export.get_layout_html = old_layout_fn
 
-def _title_from_models(models, title):
+def _title_from_models(models: Iterable[Model], title: str) -> str:
     if title is not None:
         return title
 
@@ -121,8 +139,12 @@ def _title_from_models(models, title):
 
     return DEFAULT_TITLE
 
-def file_html(models, resources, title=None, template=BASE_TEMPLATE,
-              template_variables={}, theme=None, _always_new=False):
+def file_html(
+    models: Model | Document | List[Model], resources: Resources | None,
+    title: Optional[str] = None, template: Template | str = BASE_TEMPLATE,
+    template_variables: Dict[str, Any] = {}, theme: ThemeLike = None,
+    _always_new: bool = False
+):
     models_seq = []
     if isinstance(models, Model):
         models_seq = [models]
@@ -147,10 +169,15 @@ def file_html(models, resources, title=None, template=BASE_TEMPLATE,
 # Public API
 #---------------------------------------------------------------------
 
-def save(panel, filename, title=None, resources=None, template=None,
-         template_variables=None, embed=False, max_states=1000,
-         max_opts=3, embed_json=False, json_prefix='', save_path='./',
-         load_path=None, progress=True, embed_states={}, **kwargs):
+def save(
+    panel: Viewable, filename: str | os.PathLike | IO, title: Optional[str]=None,
+    resources: BkResources | None = None, template: Template | str | None = None,
+    template_variables: Dict[str, Any] = None, embed: bool = False,
+    max_states: int = 1000, max_opts: int = 3, embed_json: bool = False,
+    json_prefix: str = '', save_path: str = './', load_path: Optional[str] = None,
+    progress: bool = True, embed_states={}, as_png=None,
+    **kwargs
+) -> None:
     """
     Saves Panel objects to file.
 
@@ -158,15 +185,15 @@ def save(panel, filename, title=None, resources=None, template=None,
     ---------
     panel: Viewable
       The Panel Viewable to save to file
-    filename: string or file-like object
+    filename: str or file-like object
       Filename to save the plot to
-    title: string
+    title: str
       Optional title for the plot
-    resources: bokeh resources
+    resources: bokeh.resources.Resources
       One of the valid bokeh.resources (e.g. CDN or INLINE)
-    template:
+    template: jinja2.Template | str
       template file, as used by bokeh.file_html. If None will use bokeh defaults
-    template_variables:
+    template_variables: Dict[str, Any]
       template_variables file dict, as used by bokeh.file_html
     embed: bool
       Whether the state space should be embedded in the saved file.
@@ -186,6 +213,9 @@ def save(panel, filename, title=None, resources=None, template=None,
       Whether to report progress
     embed_states: dict (default={})
       A dictionary specifying the widget values to embed for each widget
+    as_png: boolean (default=None)
+        To save as a .png. If None save_png will be true if filename is
+        string and ends with png.
     """
     from ..pane import PaneBase
     from ..template import BaseTemplate
@@ -193,13 +223,14 @@ def save(panel, filename, title=None, resources=None, template=None,
     if isinstance(panel, PaneBase) and len(panel.layout) > 1:
         panel = panel.layout
 
-    as_png = isinstance(filename, string_types) and filename.endswith('png')
+    if as_png is None:
+        as_png = isinstance(filename, str) and filename.endswith('png')
 
     if isinstance(panel, Document):
         doc = panel
     else:
         doc = Document()
-        
+
     if resources is None:
         resources = CDN
         mode = 'cdn'
@@ -239,7 +270,7 @@ def save(panel, filename, title=None, resources=None, template=None,
             model, resources=resources, filename=filename, template=template,
             template_variables=template_variables, **kwargs
         )
-    elif isinstance(filename, string_types) and not filename.endswith('.html'):
+    elif isinstance(filename, str) and not filename.endswith('.html'):
         filename = filename + '.html'
 
     kwargs = {}
@@ -251,7 +282,7 @@ def save(panel, filename, title=None, resources=None, template=None,
     if template_variables:
         kwargs['template_variables'] = template_variables
 
-    resources = Resources.from_bokeh(resources)
+    resources = Resources.from_bokeh(resources, absolute=True)
 
     # Set resource mode
     with set_resource_mode(resources):

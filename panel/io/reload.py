@@ -6,6 +6,7 @@ import types
 from contextlib import contextmanager
 from functools import partial
 
+from ..util import fullpath
 from .callbacks import PeriodicCallback
 from .state import state
 
@@ -70,7 +71,7 @@ def autoreload_watcher():
     files and sys.modules.
     """
     cb = partial(_reload_on_update, {})
-    _callbacks[state.curdoc] = pcb = PeriodicCallback(callback=cb)
+    _callbacks[state.curdoc] = pcb = PeriodicCallback(callback=cb, background=True)
     pcb.start()
 
 def watch(filename):
@@ -103,7 +104,7 @@ def record_modules():
             else:
                 filepath = spec.origin
 
-            filepath = os.path.abspath(filepath)
+            filepath = fullpath(filepath)
 
             if filepath is None or in_blacklist(filepath):
                 continue

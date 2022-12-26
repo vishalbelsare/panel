@@ -2,7 +2,6 @@
 .bk-root, .bk-root .bk:before, .bk-root .bk:after {
   font-family: var(--body-font);
   font-size: var(--type-ramp-base-font-size);
-  /* background: var(--background-color); */
   color: var(--neutral-foreground-rest);
 }
 
@@ -432,14 +431,13 @@
   border-bottom: 4px solid transparent;
 }
 
-.bk-root button {
+.bk-root .bk-btn {
   -moz-user-select: none;
   -ms-user-select: none;
   -webkit-user-select: none;
-  background-color:  var(--neutral-fill-hover);
+  background-color:  var(--neutral-fill-rest);
   border-radius: calc(var(--corner-radius) * 1px);
-  border: 1px solid transparent;
-  border: none;
+  border: transparent;
   color: var(--neutral-foreground-rest);
   cursor: pointer;
   display: inline-block;
@@ -452,26 +450,21 @@
   vertical-align: middle;
   white-space: nowrap;
 }
-.bk-root button:hover {
-  background-color:  var(--neutral-fill-hover);
-  color: var(--neutral-foreground-rest);
-  border: none;
+.bk-root .bk-btn:hover {
+  background-color: var(--neutral-fill-hover);
 }
-.bk button.bk-active {
-  background-color:  var(--neutral-fill-active);
-  color: var(--neutral-foreground-rest);
-  border: none;
+.bk .bk-btn.bk-active {
+  background-color: var(--neutral-fill-active);
+  border: 1px solid var(--accent-fill-active);
+  filter: brightness(0.9);
 }
-.bk-root button[disabled],
-.bk-root button[disabled]:hover,
-.bk-root button[disabled]:focus,
-.bk-root button[disabled]:active,
-.bk-root button[disabled].bk-active {
+.bk-root .bk-btn[disabled],
+.bk-root .bk-btn[disabled]:hover,
+.bk-root .bk-btn[disabled]:focus,
+.bk-root .bk-btn[disabled]:active,
+.bk-root .bk-btn[disabled].bk-active {
   cursor: not-allowed;
   pointer-events: none !important;
-  background-color: var(--neutral-fill-rest);
-  color: var(--neutral-foreground-rest);
-  border: none;
 }
 
 .bk-root *.bk-btn {
@@ -483,7 +476,6 @@
   cursor: pointer;
   padding: 6px 12px;
   font-size: 12px;
-  border: 1px solid transparent;
   border-radius: calc(var(--corner-radius) * 1px);
   outline: 0;
   user-select: none;
@@ -511,12 +503,10 @@
 .bk-root *.bk-btn-default[disabled]:hover {
   color: var(--neutral-foreground-rest);
   background-color: var(--neutral-fill-rest);
-  border: none;
 }
 .bk-root *.bk-btn-default:hover {
   background-color:  var(--neutral-fill-hover);
   color: var(--neutral-foreground-rest);
-  border: none;
 }
 .bk-root *.bk-btn-default.bk-active,
 .bk-root *.bk-btn-default:active,
@@ -539,13 +529,13 @@
 .bk-root *.bk-btn-primary,
 .bk-root *.bk-btn-primary[disabled],
 .bk-root *.bk-btn-primary[disabled]:hover {
-  color: color(--accent-foreground-cut-rest);
+  color: var(--accent-foreground-cut-rest);
   background: var(--accent-fill-rest);
   border: none;
 }
 .bk-root *.bk-btn-primary:hover {
   color: white;
-  color: color(--accent-foreground-cut-rest);
+  color: var(--accent-foreground-cut-rest);
   background-color: var(--accent-fill-hover);
   border: none;
 }
@@ -553,7 +543,7 @@
 .bk-root *.bk-btn-primary:active,
 .bk-root *.bk-btn-primary.bk-active[disabled],
 .bk-root *.bk-btn-primary.bk-active[disabled]:hover {
-  color: color(--accent-foreground-cut-rest);
+  color: var(--accent-foreground-cut-rest);
   background-color: var(--accent-fill-active);
   border: none;
 }
@@ -1491,10 +1481,13 @@ input[type=range]::-moz-range-track {
   background-position: center;
   border-radius: calc(var(--corner-radius) * 1px);
 }
+.noUi-connect, .noUi-connects {
+  background-color: var(--neutral-outline-rest) !important;
+}
 .bk-root .noUi-horizontal {
   /* height: 2px; */
   margin-top: 15px;
-  height: calc(var(--track-width) * 1px);
+  height: calc(var(--track-width) * 2px);
   background-color: var(--neutral-outline-rest);
   border-radius: calc(var(--corner-radius) * 1px);
 }
@@ -1510,8 +1503,8 @@ input[type=range]::-moz-range-track {
 
 .bk-root .noUi-horizontal .noUi-handle {
     border: none;
-    width: 12px;
-    height: 12px;
+    width: 13px;
+    height: 13px;
     background: var(--neutral-foreground-rest);
     border-radius: calc(var(--corner-radius) * 1px);
     box-shadow: none;
@@ -1520,6 +1513,23 @@ input[type=range]::-moz-range-track {
 .bk-root [disabled].noUi-target, .bk-root [disabled].noUi-handle, .bk-root [disabled] .noUi-handle, .bk-root [disabled] .noUI-draggable {
   cursor: not-allowed;
   opacity: 0.5;
+}
+.bk-root .noUi-vertical {
+  margin-top: 15px;
+  width: calc(var(--track-width) * 2px);
+  background-color: var(--neutral-outline-rest);
+  border-radius: calc(var(--corner-radius) * 1px);
+}
+.bk-root .noUi-target.noUi-vertical {
+    margin-top: 10px;
+}
+.bk-root .noUi-vertical .noUi-handle {
+    border: none;
+    width: 13px;
+    height: 13px;
+    background: var(--neutral-foreground-rest);
+    border-radius: calc(var(--corner-radius) * 1px);
+    box-shadow: none;
 }
 .bk-root .bk-tabs-header {
   display: flex;

@@ -2,31 +2,53 @@
 The input widgets generally allow entering arbitrary information into
 a text field or similar.
 """
+from __future__ import annotations
+
 import ast
 import json
 
 from base64 import b64decode
-from datetime import datetime, date
-from six import string_types
+from datetime import date, datetime
+from typing import (
+    TYPE_CHECKING, Any, ClassVar, Dict, Mapping, Optional, Type,
+)
 
+import numpy as np
 import param
 
 from bokeh.models.formatters import TickFormatter
 from bokeh.models.widgets import (
     CheckboxGroup as _BkCheckboxGroup, ColorPicker as _BkColorPicker,
-    DatePicker as _BkDatePicker, Div as _BkDiv, TextInput as _BkTextInput,
-    PasswordInput as _BkPasswordInput, Spinner as _BkSpinner,
-    FileInput as _BkFileInput, TextAreaInput as _BkTextAreaInput,
-    NumericInput as _BkNumericInput)
+    DatePicker as _BkDatePicker, Div as _BkDiv, FileInput as _BkFileInput,
+    NumericInput as _BkNumericInput, PasswordInput as _BkPasswordInput,
+    Spinner as _BkSpinner, TextAreaInput as _BkTextAreaInput,
+    TextInput as _BkTextInput,
+)
 
 from ..config import config
-from ..layout import Column
-from ..util import param_reprs, as_unicode
-from .base import Widget, CompositeWidget
+from ..layout import Column, Panel
 from ..models import DatetimePicker as _bkDatetimePicker
+from ..util import param_reprs
+from .base import CompositeWidget, Widget
+
+if TYPE_CHECKING:
+    from bokeh.document import Document
+    from bokeh.model import Model
+    from pyviz_comms import Comm
+
+    from ..viewable import Viewable
 
 
 class TextInput(Widget):
+    """
+    The `TextInput` widget allows entering any string using a text input box.
+
+    Reference: https://panel.holoviz.org/reference/widgets/TextInput.html
+
+    :Example:
+
+    >>> TextInput(name='Name', placeholder='Enter your name here ...')
+    """
 
     max_length = param.Integer(default=5000, doc="""
       Max count of characters in the input field.""")
@@ -40,20 +62,84 @@ class TextInput(Widget):
     value_input = param.String(default='', allow_None=True, doc="""
       Initial or entered text value updated on every key press.""")
 
-    _widget_type = _BkTextInput
+    _widget_type: ClassVar[Type[Model]] = _BkTextInput
+
+    @classmethod
+    def from_param(cls, parameter: param.Parameter, onkeyup=False, **params) -> Viewable:
+        """
+        Construct a widget from a Parameter and link the two
+        bi-directionally.
+
+        Parameters
+        ----------
+        parameter: param.Parameter
+          A parameter to create the widget from.
+        onkeyup: boolean
+          Whether to trigger events on every key press.
+        params: dict
+          Keyword arguments to be passed to the widget constructor
+
+        Returns
+        -------
+        Widget instance linked to the supplied parameter
+        """
+        params['onkeyup'] = onkeyup
+        return super().from_param(parameter, **params)
 
 
 class PasswordInput(TextInput):
+    """
+    The `PasswordInput` allows entering any string using an obfuscated text
+    input box.
 
-    _widget_type = _BkPasswordInput
+    Reference: https://panel.holoviz.org/reference/widgets/PasswordInput.html
+
+    :Example:
+
+    >>> PasswordInput(
+    ...     name='Password', placeholder='Enter your password here...'
+    ... )
+    """
+
+    _widget_type: ClassVar[Type[Model]] = _BkPasswordInput
 
 
 class TextAreaInput(TextInput):
+    """
+    The `TextAreaInput` allows entering any multiline string using a text input
+    box.
 
-    _widget_type = _BkTextAreaInput
+    Lines are joined with the newline character `\n`.
+
+    Reference: https://panel.holoviz.org/reference/widgets/TextAreaInput.html
+
+    :Example:
+
+    >>> TextAreaInput(
+    ...     name='Description', placeholder='Enter your description here...'
+    ... )
+    """
+
+    _widget_type: ClassVar[Type[Model]] = _BkTextAreaInput
 
 
 class FileInput(Widget):
+    """
+    The `FileInput` allows the user to upload one or more files to the server.
+
+    It makes the filename, MIME type and (bytes) content available in Python.
+
+    Please note
+
+    - you can in fact *drag and drop* files onto the `FileInput`.
+    - you easily save the files using the `save` method.
+
+    Reference: https://panel.holoviz.org/reference/widgets/FileInput.html
+
+    :Example:
+
+    >>> FileInput(accept='.png,.jpeg', multiple=True)
+    """
 
     accept = param.String(default=None)
 
@@ -67,11 +153,13 @@ class FileInput(Widget):
 
     value = param.Parameter(default=None)
 
-    _widget_type = _BkFileInput
+    _rename: ClassVar[Mapping[str, str | None]] = {'name': None, 'filename': None}
 
-    _source_transforms = {'value': "'data:' + source.mime_type + ';base64,' + value"}
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {
+        'value': "'data:' + source.mime_type + ';base64,' + value"
+    }
 
-    _rename = {'name': None, 'filename': None}
+    _widget_type: ClassVar[Type[Model]] = _BkFileInput
 
     def _process_param_change(self, msg):
         msg = super()._process_param_change(msg)
@@ -88,7 +176,7 @@ class FileInput(Widget):
     def _process_property_change(self, msg):
         msg = super()._process_property_change(msg)
         if 'value' in msg:
-            if isinstance(msg['value'], string_types):
+            if isinstance(msg['value'], str):
                 msg['value'] = b64decode(msg['value'])
             else:
                 msg['value'] = [b64decode(content) for content in msg['value']]
@@ -96,40 +184,75 @@ class FileInput(Widget):
 
     def save(self, filename):
         """
-        Saves the uploaded FileInput data to a file or BytesIO object.
+        Saves the uploaded FileInput data object(s) to file(s) or
+        BytesIO object(s).
 
         Arguments
         ---------
-        filename (str): File path or file-like object
+        filename (str or list[str]): File path or file-like object
         """
-        if isinstance(filename, string_types):
-            with open(filename, 'wb') as f:
-                f.write(self.value)
-        else:
-            filename.write(self.value)
+        value = self.value
+        if isinstance(filename, list) and not isinstance(value, list):
+            raise TypeError(
+                "FileInput contains a list of files but only a single "
+                "filename was given. Please provide a list of filenames or "
+                "file-like objects."
+            )
+        elif not isinstance(filename, list) and isinstance(value, list):
+            raise TypeError(
+                "FileInput contains a single files but a list of "
+                "filenames was given. Please provide a single filename "
+                "or file-like object."
+            )
+        if not isinstance(value, list):
+            value = [self.value]
+        if not isinstance(filename, list):
+            filename = [filename]
+
+        for val, fn in zip(value, filename):
+            if isinstance(fn, str):
+                with open(fn, 'wb') as f:
+                    f.write(val)
+            else:
+                fn.write(val)
 
 
 class StaticText(Widget):
+    """
+    The `StaticText` widget displays a text value, but does not allow editing
+    it.
+
+    Reference: https://panel.holoviz.org/reference/widgets/StaticText.html
+
+    :Example:
+
+    >>> StaticText(name='Model', value='animagen2')
+    """
 
     style = param.Dict(default=None, doc="""
         Dictionary of CSS property:value pairs to apply to this Div.""")
 
-    value = param.Parameter(default=None)
+    value = param.Parameter(default=None, doc="""
+        The current value""")
 
-    _format = '<b>{title}</b>: {value}'
+    _format: ClassVar[str] = '<b>{title}</b>: {value}'
 
-    _rename = {'name': None, 'value': 'text'}
+    _rename: ClassVar[Mapping[str, str | None]] = {'name': None, 'value': 'text'}
 
-    _target_transforms = {'value': 'target.text.split(": ")[0]+": "+value'}
+    _target_transforms: ClassVar[Mapping[str, str | None]] = {
+        'value': 'target.text.split(": ")[0]+": "+value'
+    }
 
-    _source_transforms = {'value': 'value.split(": ")[1]'}
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {
+        'value': 'value.split(": ")[1]'
+    }
 
-    _widget_type = _BkDiv
+    _widget_type: ClassVar[Type[Model]] = _BkDiv
 
     def _process_param_change(self, msg):
         msg = super()._process_property_change(msg)
         if 'value' in msg:
-            text = as_unicode(msg.pop('value'))
+            text = str(msg.pop('value'))
             partial = self._format.replace('{value}', '').format(title=self.name)
             if self.name:
                 text = self._format.format(title=self.name, value=text.replace(partial, ''))
@@ -138,52 +261,85 @@ class StaticText(Widget):
 
 
 class DatePicker(Widget):
+    """
+    The `DatePicker` allows selecting selecting a `date` value using a text box
+    and a date-picking utility.
 
-    value = param.CalendarDate(default=None)
+    Reference: https://panel.holoviz.org/reference/widgets/DatePicker.html
 
-    start = param.CalendarDate(default=None)
+    :Example:
 
-    end = param.CalendarDate(default=None)
+    >>> DatePicker(
+    ...     value=date(2025,1,1),
+    ...     start=date(2025,1,1), end=date(2025,12,31),
+    ...     name='Date'
+    ... )
+    """
+
+    value = param.CalendarDate(default=None, doc="""
+        The current value""")
+
+    start = param.CalendarDate(default=None, doc="""
+        Inclusive lower bound of the allowed date selection""")
+
+    end = param.CalendarDate(default=None, doc="""
+        Inclusive upper bound of the allowed date selection""")
 
     disabled_dates = param.List(default=None, class_=(date, str))
 
     enabled_dates = param.List(default=None, class_=(date, str))
 
-    _source_transforms = {}
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {}
 
-    _rename = {'start': 'min_date', 'end': 'max_date', 'name': 'title'}
+    _rename: ClassVar[Mapping[str, str | None]] = {
+        'start': 'min_date', 'end': 'max_date', 'name': 'title'
+    }
 
-    _widget_type = _BkDatePicker
+    _widget_type: ClassVar[Type[Model]] = _BkDatePicker
 
     def _process_property_change(self, msg):
         msg = super()._process_property_change(msg)
-        if 'value' in msg:
-            if isinstance(msg['value'], string_types):
-                msg['value'] = datetime.date(datetime.strptime(msg['value'], '%Y-%m-%d'))
+        for p in ('start', 'end', 'value'):
+            if p not in msg:
+                continue
+            value = msg[p]
+            if isinstance(value, str):
+                msg[p] = datetime.date(datetime.strptime(value, '%Y-%m-%d'))
         return msg
 
 
 class _DatetimePickerBase(Widget):
 
-    start = param.CalendarDate(default=None)
+    disabled_dates = param.List(default=None, class_=(date, str), doc="""
+      Dates to make unavailable for selection.""")
 
-    end = param.CalendarDate(default=None)
+    enabled_dates = param.List(default=None, class_=(date, str), doc="""
+      Dates to make available for selection.""")
 
-    disabled_dates = param.List(default=None, class_=(date, str))
+    enable_time = param.Boolean(default=True, doc="""
+      Enable editing of the time in the widget.""")
 
-    enabled_dates = param.List(default=None, class_=(date, str))
+    enable_seconds = param.Boolean(default=True, doc="""
+      Enable editing of the seconds in the widget.""")
 
-    enable_time = param.Boolean(default=True)
+    end = param.Date(default=None, doc="""
+      Inclusive upper bound of the allowed date selection.""")
 
-    enable_seconds = param.Boolean(default=True)
+    military_time = param.Boolean(default=True, doc="""
+      Whether to display time in 24 hour format.""")
 
-    military_time = param.Boolean(default=True)
+    start = param.Date(default=None, doc="""
+      Inclusive lower bound of the allowed date selection.""")
 
-    _source_transforms = {'value': None, 'start': None, 'end': None, 'mode': None}
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {
+        'value': None, 'start': None, 'end': None, 'mode': None
+    }
 
-    _rename = {'start': 'min_date', 'end': 'max_date', 'name': 'title'}
+    _rename: ClassVar[Mapping[str, str | None]] = {
+        'start': 'min_date', 'end': 'max_date', 'name': 'title'
+    }
 
-    _widget_type = _bkDatetimePicker
+    _widget_type: ClassVar[Type[Model]] = _bkDatetimePicker
 
     __abstract = True
 
@@ -192,15 +348,17 @@ class _DatetimePickerBase(Widget):
         self._update_value_bounds()
 
     @staticmethod
-    def _date_to_datetime(x):
-        if isinstance(x, date):
-            return datetime(x.year, x.month, x.day)
+    def _convert_to_datetime(v):
+        if isinstance(v, datetime):
+            return v
+        elif isinstance(v, date):
+            return datetime(v.year, v.month, v.day)
 
     @param.depends('start', 'end', watch=True)
     def _update_value_bounds(self):
         self.param.value.bounds = (
-            self._date_to_datetime(self.start),
-            self._date_to_datetime(self.end),
+            self._convert_to_datetime(self.start),
+            self._convert_to_datetime(self.end)
         )
         self.param.value._validate(self.value)
 
@@ -214,24 +372,37 @@ class _DatetimePickerBase(Widget):
         msg = super()._process_param_change(msg)
         if 'value' in msg:
             msg['value'] = self._deserialize_value(msg['value'])
+        if 'min_date' in msg:
+            msg['min_date'] = self._convert_to_datetime(msg['min_date'])
+        if 'max_date' in msg:
+            msg['max_date'] = self._convert_to_datetime(msg['max_date'])
         return msg
 
 
 class DatetimePicker(_DatetimePickerBase):
+    """
+    The `DatetimePicker` allows selecting selecting a `datetime` value using a
+    textbox and a datetime-picking utility.
+
+    Reference: https://panel.holoviz.org/reference/widgets/DatetimePicker.html
+
+    :Example:
+
+    >>> DatetimePicker(
+    ...    value=datetime(2025,1,1,22,0),
+    ...    start=date(2025,1,1), end=date(2025,12,31),
+    ...    military_time=True, name='Date and time'
+    ... )
+    """
+
 
     value = param.Date(default=None)
 
     mode = param.String('single', constant=True)
 
     def _serialize_value(self, value):
-        if isinstance(value, string_types) and value:
+        if isinstance(value, str) and value:
             value = datetime.strptime(value, r'%Y-%m-%d %H:%M:%S')
-
-            # Hour, minute and seconds can be increased after end is reached.
-            # This forces the hours, minute and second to be 0.
-            end = self._date_to_datetime(self.end)
-            if end is not None and value > end:
-                value = end
 
         return value
 
@@ -243,24 +414,33 @@ class DatetimePicker(_DatetimePickerBase):
 
 
 class DatetimeRangePicker(_DatetimePickerBase):
-    value = param.DateRange(default=None)
+    """
+    The `DatetimeRangePicker` allows selecting selecting a `datetime` range
+    using a text box and a datetime-range-picking utility.
+
+    Reference: https://panel.holoviz.org/reference/widgets/DatetimeRangePicker.html
+
+    :Example:
+
+    >>> DatetimeRangePicker(
+    ...    value=(datetime(2025,1,1,22,0), datetime(2025,1,2,22,0)),
+    ...    start=date(2025,1,1), end=date(2025,12,31),
+    ...    military_time=True, name='Datetime Range'
+    ... )
+    """
+
+    value = param.DateRange(default=None, doc="""
+        The current value""")
 
     mode = param.String('range', constant=True)
 
     def _serialize_value(self, value):
-        if isinstance(value, string_types) and value:
+        if isinstance(value, str) and value:
             value = [
                 datetime.strptime(value, r'%Y-%m-%d %H:%M:%S')
                 for value in value.split(' to ')
             ]
 
-            # Hour, minute and seconds can be increased after end is reached.
-            # This forces the hours, minute and second to be 0.
-            end = self._date_to_datetime(self.end)
-            if end is not None and value[0] > end:
-                value[0] = end
-            if end is not None and value[1] > end:
-                value[1] = end
 
             value = tuple(value)
 
@@ -276,24 +456,34 @@ class DatetimeRangePicker(_DatetimePickerBase):
 
 
 class ColorPicker(Widget):
+    """
+    The `ColorPicker` widget allows selecting a hexidecimal RGB color value
+    using the browser’s color-picking widget.
+
+    Reference: https://panel.holoviz.org/reference/widgets/ColorPicker.html
+
+    :Example:
+
+    >>> ColorPicker(name='Color', value='#99ef78')
+    """
 
     value = param.Color(default=None, doc="""
         The selected color""")
 
-    _widget_type = _BkColorPicker
+    _widget_type: ClassVar[Type[Model]] = _BkColorPicker
 
-    _rename = {'value': 'color', 'name': 'title'}
+    _rename: ClassVar[Mapping[str, str | None]] = {'value': 'color', 'name': 'title'}
 
 
 class _NumericInputBase(Widget):
 
     value = param.Number(default=0, allow_None=True, doc="""
-        The initial value of the spinner.""")
+        The current value of the spinner.""")
 
     placeholder = param.String(default='0', doc="""
         Placeholder for empty input field.""")
 
-    format = param.ClassSelector(default=None, class_=string_types+(TickFormatter,), doc="""
+    format = param.ClassSelector(default=None, class_=(str, TickFormatter,), doc="""
         Allows defining a custom format string or bokeh TickFormatter.""")
 
     start = param.Parameter(default=None, allow_None=True, doc="""
@@ -302,9 +492,9 @@ class _NumericInputBase(Widget):
     end = param.Parameter(default=None, allow_None=True, doc="""
         Optional maximum allowable value.""")
 
-    _rename = {'name': 'title', 'start': 'low', 'end': 'high'}
+    _rename: ClassVar[Mapping[str, str | None]] = {'name': 'title', 'start': 'low', 'end': 'high'}
 
-    _widget_type = _BkNumericInput
+    _widget_type: ClassVar[Type[Model]] = _BkNumericInput
 
     __abstract = True
 
@@ -312,7 +502,7 @@ class _NumericInputBase(Widget):
 class _IntInputBase(_NumericInputBase):
 
     value = param.Integer(default=0, allow_None=True, doc="""
-        The initial value of the spinner.""")
+        The current value of the spinner.""")
 
     start = param.Integer(default=None, allow_None=True, doc="""
         Optional minimum allowable value.""")
@@ -329,7 +519,7 @@ class _IntInputBase(_NumericInputBase):
 class _FloatInputBase(_NumericInputBase):
 
     value = param.Number(default=0, allow_None=True, doc="""
-        The initial value of the spinner.""")
+        The current value of the spinner.""")
 
     start = param.Number(default=None, allow_None=True, doc="""
         Optional minimum allowable value.""")
@@ -353,12 +543,12 @@ class _SpinnerBase(_NumericInputBase):
         Defines the debounce time in ms before updating `value_throttled` when
         the mouse wheel is used to change the input.""")
 
-    _widget_type = _BkSpinner
+    _widget_type: ClassVar[Type[Model]] = _BkSpinner
 
     __abstract = True
 
     def __init__(self, **params):
-        if params.get('value') is None:
+        if 'value' not in params:
             value = params.get('start', self.value)
             if value is not None:
                 params['value'] = value
@@ -370,11 +560,21 @@ class _SpinnerBase(_NumericInputBase):
         return '{cls}({params})'.format(cls=type(self).__name__,
                                         params=', '.join(param_reprs(self, ['value_throttled'])))
 
-    def _update_model(self, events, msg, root, model, doc, comm):
+    def _update_model(
+        self, events: Dict[str, param.parameterized.Event], msg: Dict[str, Any],
+        root: Model, model: Model, doc: Document, comm: Optional[Comm]
+    ) -> None:
         if 'value_throttled' in msg:
             del msg['value_throttled']
 
         return super()._update_model(events, msg, root, model, doc, comm)
+
+    def _process_param_change(self, msg):
+        # Workaround for -inf serialization errors
+        if 'value' in msg and msg['value'] == float('-inf'):
+            msg['value'] = None
+            msg['value_throttled'] = None
+        return super()._process_param_change(msg)
 
     def _process_property_change(self, msg):
         if config.throttled:
@@ -386,17 +586,48 @@ class _SpinnerBase(_NumericInputBase):
 
 
 class IntInput(_SpinnerBase, _IntInputBase):
+    """
+    The `IntInput` allows selecting an integer value using a spinbox.
 
-    step = param.Integer(default=1)
+    It behaves like a slider except that lower and upper bounds are optional
+    and a specific value can be entered. The value can be changed using the
+    keyboard (up, down, page up, page down), mouse wheel and arrow buttons.
 
-    value_throttled = param.Integer(default=None, constant=True)
+    Reference: https://panel.holoviz.org/reference/widgets/IntInput.html
+
+    :Example:
+
+    >>> IntInput(name='Value', value=100, start=0, end=1000, step=10)
+    """
+
+    step = param.Integer(default=1, doc="""
+        The step size.""")
+
+    value_throttled = param.Integer(default=None, constant=True, doc="""
+        The current value. Updates only on `<enter>` or when the widget looses focus.""")
 
 
 class FloatInput(_SpinnerBase, _FloatInputBase):
+    """
+    The `FloatInput` allows selecting a floating point value using a spinbox.
 
-    step = param.Number(default=0.1)
+    It behaves like a slider except that the lower and upper bounds are
+    optional and a specific value can be entered. The value can be changed
+    using the keyboard (up, down, page up, page down), mouse wheel and arrow
+    buttons.
 
-    value_throttled = param.Number(default=None, constant=True)
+    Reference: https://panel.holoviz.org/reference/widgets/FloatInput.html
+
+    :Example:
+
+    >>> FloatInput(name='Value', value=5., step=1e-1, start=0, end=10)
+    """
+
+    step = param.Number(default=0.1, doc="""
+        The step size.""")
+
+    value_throttled = param.Number(default=None, constant=True, doc="""
+        The current value. Updates only on `<enter>` or when the widget looses focus.""")
 
 
 class NumberInput(_SpinnerBase):
@@ -415,9 +646,24 @@ Spinner = NumberInput
 
 class LiteralInput(Widget):
     """
-    LiteralInput allows declaring Python literals using a text
-    input widget. Optionally a type may be declared.
+    The `LiteralInput` allows declaring Python literals using a text
+    input widget.
+
+    A *literal* is some specific primitive value of type `str`
+    , `int`, `float`, `bool` etc or a `dict`, `list`, `tuple`, `set` etc of
+    primitive values.
+
+    Optionally the literal `type` may be declared.
+
+    Reference: https://panel.holoviz.org/reference/widgets/LiteralInput.html
+
+    :Example:
+
+    >>> LiteralInput(name='Dictionary', value={'key': [1, 2, 3]}, type=dict)
     """
+
+    placeholder = param.String(default='', doc="""
+      Placeholder for empty input field.""")
 
     serializer = param.ObjectSelector(default='ast', objects=['ast', 'json'], doc="""
        The serialization (and deserialization) method to use. 'ast'
@@ -429,13 +675,19 @@ class LiteralInput(Widget):
 
     value = param.Parameter(default=None)
 
-    _rename = {'name': 'title', 'type': None, 'serializer': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {
+        'name': 'title', 'type': None, 'serializer': None
+    }
 
-    _source_transforms = {'value': """JSON.parse(value.replace(/'/g, '"'))"""}
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {
+        'value': """JSON.parse(value.replace(/'/g, '"'))"""
+    }
 
-    _target_transforms = {'value': """JSON.stringify(value).replace(/,/g, ",").replace(/:/g, ": ")"""}
+    _target_transforms: ClassVar[Mapping[str, str | None]] = {
+        'value': """JSON.stringify(value).replace(/,/g, ",").replace(/:/g, ": ")"""
+    }
 
-    _widget_type = _BkTextInput
+    _widget_type: ClassVar[Type[Model]] = _BkTextInput
 
     def __init__(self, **params):
         super().__init__(**params)
@@ -460,7 +712,9 @@ class LiteralInput(Widget):
         if 'value' in msg:
             value = msg.pop('value')
             try:
-                if self.serializer == 'json':
+                if value == '':
+                    value = ''
+                elif self.serializer == 'json':
                     value = json.loads(value)
                 else:
                     value = ast.literal_eval(value)
@@ -478,7 +732,9 @@ class LiteralInput(Widget):
                             pass
                         else:
                             break
-                    if typed_value is None and value is not None:
+                    if typed_value is None and value == '':
+                        value = None
+                    elif typed_value is None and value is not None:
                         new_state = ' (wrong type)'
                         value = self.value
                     else:
@@ -493,38 +749,120 @@ class LiteralInput(Widget):
         msg = super()._process_param_change(msg)
         if 'value' in msg:
             value = msg['value']
-            if isinstance(value, string_types):
+            if isinstance(value, str):
                 value = repr(value)
             elif self.serializer == 'json':
                 value = json.dumps(value)
             else:
-                value = '' if value is None else as_unicode(value)
+                value = '' if value is None else str(value)
             msg['value'] = value
         msg['title'] = self.name
         return msg
 
 
+class ArrayInput(LiteralInput):
+    """
+    The `ArrayInput` allows rendering and editing NumPy arrays in a text
+    input widget.
+
+    Arrays larger than the `max_array_size` will be summarized and editing
+    will be disabled.
+
+    Reference: https://panel.holoviz.org/reference/widgets/ArrayInput.html
+
+    :Example:
+
+    >>> To be determined ...
+    """
+
+    max_array_size = param.Number(default=1000, doc="""
+        Arrays larger than this limit will be allowed in Python but
+        will not be serialized into JavaScript. Although such large
+        arrays will thus not be editable in the widget, such a
+        restriction helps avoid overwhelming the browser and lets
+        other widgets remain usable.""")
+
+    _rename: ClassVar[Mapping[str, str | None]] = dict(LiteralInput._rename, max_array_size=None)
+
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {'value': None}
+
+    def __init__(self, **params):
+        super().__init__(**params)
+        self._auto_disabled = False
+
+    def _process_property_change(self, msg):
+        msg = super()._process_property_change(msg)
+        if 'value' in msg and isinstance(msg['value'], list):
+            msg['value'] = np.asarray(msg['value'])
+        return msg
+
+    def _process_param_change(self, msg):
+        if msg.get('disabled', False):
+            self._auto_disabled = False
+        value = msg.get('value')
+        if value is None:
+            return super()._process_param_change(msg)
+        if value.size <= self.max_array_size:
+            msg['value'] = value.tolist()
+            # If array is no longer larger than max_array_size
+            # unset disabled
+            if self.disabled and self._auto_disabled:
+                self.disabled = False
+                msg['disabled'] = False
+                self._auto_disabled = False
+        else:
+            msg['value'] = np.array2string(
+                msg['value'], separator=',',
+                threshold=self.max_array_size
+            )
+            if not self.disabled:
+                self.param.warning(
+                    f"Number of array elements ({value.size}) exceeds "
+                    f"`max_array_size` ({self.max_array_size}), editing "
+                    "will be disabled."
+                )
+                self.disabled = True
+                msg['disabled'] = True
+                self._auto_disabled = True
+        return super()._process_param_change(msg)
+
+
 class DatetimeInput(LiteralInput):
     """
-    DatetimeInput allows declaring Python literals using a text
-    input widget. Optionally a type may be declared.
+    The `DatetimeInput` allows specifying Python `datetime` like values using
+    a text input widget.
+
+    An optional `type` may be declared.
+
+    Reference: https://panel.holoviz.org/reference/widgets/DatetimeInput.html
+
+    :Example:
+
+    >>> DatetimeInput(name='Datetime', value=datetime(2019, 2, 8))
     """
+
+    value = param.Date(default=None, doc="""
+        The current value""")
+
+    start = param.Date(default=None, doc="""
+        Inclusive lower bound of the allowed date selection""")
+
+    end = param.Date(default=None, doc="""
+        Inclusive upper bound of the allowed date selection""")
 
     format = param.String(default='%Y-%m-%d %H:%M:%S', doc="""
         Datetime format used for parsing and formatting the datetime.""")
 
-    value = param.Date(default=None)
-
-    start = param.Date(default=None)
-
-    end = param.Date(default=None)
-
     type = datetime
 
-    _source_transforms = {'value': None, 'start': None, 'end': None}
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {
+        'value': None, 'start': None, 'end': None
+    }
 
-    _rename = {'format': None, 'type': None, 'name': 'title',
-               'start': None, 'end': None, 'serializer': None}
+    _rename: ClassVar[Mapping[str, str | None]] = {
+        'format': None, 'type': None, 'name': 'title', 'start': None,
+        'end': None, 'serializer': None
+    }
 
     def __init__(self, **params):
         super().__init__(**params)
@@ -578,17 +916,34 @@ class DatetimeInput(LiteralInput):
 
 
 class DatetimeRangeInput(CompositeWidget):
+    """
+    The `DatetimeRangeInput` widget allows selecting a `datetime` range using
+    two `DatetimeInput` widgets, which return a `tuple` range.
 
-    value = param.Tuple(default=(None, None), length=2)
+    Reference: https://panel.holoviz.org/reference/widgets/DatetimeRangeInput.html
 
-    start = param.Date(default=None)
+    :Example:
 
-    end = param.Date(default=None)
+    >>> DatetimeRangeInput(
+    ...     name='Datetime Range',
+    ...     value=(datetime(2017, 1, 1), datetime(2018, 1, 10)),
+    ...     start=datetime(2017, 1, 1), end=datetime(2019, 1, 1),
+    ... )
+    """
+
+    value = param.Tuple(default=(None, None), length=2, doc="""
+        The current value""")
+
+    start = param.Date(default=None, doc="""
+        Inclusive lower bound of the allowed date selection""")
+
+    end = param.Date(default=None, doc="""
+        Inclusive upper bound of the allowed date selection""")
 
     format = param.String(default='%Y-%m-%d %H:%M:%S', doc="""
         Datetime format used for parsing and formatting the datetime.""")
 
-    _composite_type = Column
+    _composite_type: ClassVar[Type[Panel]] = Column
 
     def __init__(self, **params):
         self._text = StaticText(margin=(5, 0, 0, 0), style={'white-space': 'nowrap'})
@@ -645,18 +1000,35 @@ class DatetimeRangeInput(CompositeWidget):
 
 
 class Checkbox(Widget):
+    """
+    The `Checkbox` allows toggling a single condition between `True`/`False`
+    states by ticking a checkbox.
 
-    value = param.Boolean(default=False)
+    This widget is interchangeable with the `Toggle` widget.
 
-    _supports_embed = True
+    Reference: https://panel.holoviz.org/reference/widgets/Checkbox.html
 
-    _rename = {'value': 'active', 'name': 'labels'}
+    :Example:
 
-    _source_transforms = {'value': "value.indexOf(0) >= 0", 'name': "value[0]"}
+    >>> Checkbox(name='Works with the tools you know and love', value=True)
+    """
 
-    _target_transforms = {'value': "value ? [0] : []", 'name': "[value]"}
+    value = param.Boolean(default=False, doc="""
+        The current value""")
 
-    _widget_type = _BkCheckboxGroup
+    _supports_embed: ClassVar[bool] = True
+
+    _rename: ClassVar[Mapping[str, str | None]] = {'value': 'active', 'name': 'labels'}
+
+    _source_transforms: ClassVar[Mapping[str, str | None]] = {
+        'value': "value.indexOf(0) >= 0", 'name': "value[0]"
+    }
+
+    _target_transforms: ClassVar[Mapping[str, str | None]] = {
+        'value': "value ? [0] : []", 'name': "[value]"
+    }
+
+    _widget_type: ClassVar[Type[Model]] = _BkCheckboxGroup
 
     def _process_property_change(self, msg):
         msg = super()._process_property_change(msg)

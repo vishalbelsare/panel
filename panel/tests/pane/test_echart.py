@@ -18,11 +18,16 @@ def test_echart():
     echart = ECHART
     pane = pn.pane.ECharts(echart, width=500, height=500)
     assert pane.object == echart
+
+def manualtest_echart():
+    echart = ECHART
+    pane = pn.pane.ECharts(echart, width=500, height=500)
+    assert pane.object == echart
     return pane
 
 def get_pyechart():
-    from pyecharts.charts import Bar
     from pyecharts import options as opts
+    from pyecharts.charts import Bar
 
     bar = (
         Bar()
@@ -37,6 +42,7 @@ def get_pyechart():
 
 def get_pyechart2():
     from pyecharts.charts import Bar
+
     import panel as pn
 
     bar1 = pn.widgets.IntSlider(start=1, end=100, value=50)
@@ -52,8 +58,8 @@ def get_pyechart2():
     return pn.Row(pn.Column(bar1, bar2), plot)
 
 if __name__.startswith("bokeh"):
-    # test_echart().servable()
+    # manualtest_echart().servable()
     get_pyechart2().servable()
 if __name__.startswith("__main__"):
-    test_echart().show(port=5007)
+    manualtest_echart().show(port=5007)
     get_pyechart().show(port=5007)

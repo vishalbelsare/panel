@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 sphinx-autopackage-script
 This script parses a directory tree looking for python modules and packages and
@@ -31,9 +30,8 @@ It also creates a modules index (named modules.<suffix>).
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import os
 import optparse
-
+import os
 
 # automodule options
 OPTIONS = ['members',
@@ -70,7 +68,7 @@ def write_file(name, text, opts):
 
 def format_heading(level, text):
     """Create a heading of <level> [1, 2 or 3 supported]."""
-    underlining = ['*', '-', '~', ][level-1] * len(text)
+    underlining = ['=', '-', '~', ][level-1] * len(text)
     return '%s\n%s\n\n' % (text, underlining)
 
 def format_directive(module, package=None):
@@ -161,7 +159,7 @@ def recurse_tree(path, excludes, opts):
     """
     # use absolute path for root, as relative paths like '../../foo' cause
     # 'if "/." in root ...' to filter out *all* modules otherwise
-    path = os.path.abspath(path)
+    path = os.path.abspath(os.path.expanduser(path))
     # check if the base directory is a package and get is name
     if INIT in os.listdir(path):
         package_name = path.split(os.path.sep)[-1]

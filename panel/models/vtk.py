@@ -1,19 +1,19 @@
-# coding: utf-8
 """
 Defines custom VTKPlot bokeh model to render VTK objects.
 """
-from bokeh.core.properties import (
-    String, Bool, Dict, Any, Override, Instance, Int, Float, PositiveInt,
-    Enum, List, Nullable
-)
-from bokeh.core.has_props import abstract
 from bokeh.core.enums import enumeration
-from bokeh.models import HTMLBox, Model, ColorMapper
+from bokeh.core.has_props import abstract
+from bokeh.core.properties import (
+    Any, Bool, Dict, Enum, Float, Instance, Int, List, Nullable, Override,
+    PositiveInt, String,
+)
+from bokeh.models import ColorMapper, HTMLBox, Model
 
+from ..config import config
 from ..io.resources import bundled_files
 from ..util import classproperty
 
-vtk_cdn = "https://unpkg.com/vtk.js@20.0.1/vtk.js"
+vtk_cdn = f"{config.npm_cdn}/vtk.js@20.0.1/vtk.js"
 
 class VTKAxes(Model):
     """

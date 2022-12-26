@@ -1,9 +1,10 @@
-import os
-import json
 import glob
-import pytest
+import json
+import os
 
 from io import StringIO
+
+import pytest
 
 from bokeh.models import CustomJS
 
@@ -12,7 +13,9 @@ from panel.config import config
 from panel.io.embed import embed_state
 from panel.pane import Str
 from panel.param import Param
-from panel.widgets import IntSlider, Select, FloatSlider, Checkbox, StaticText
+from panel.widgets import (
+    Checkbox, FloatSlider, IntSlider, Select, StaticText,
+)
 
 
 def test_embed_param_jslink(document, comm):
@@ -107,13 +110,31 @@ def test_embed_float_slider_explicit_values(document, comm):
         content = json.loads(v['content'])
         assert 'events' in content
         events = content['events']
-        assert len(events) == 1
-        event = events[0]
-        assert event['kind'] == 'ModelChanged'
-        assert event['attr'] == 'text'
-        assert event['model'] == model.children[1].ref
-        assert event['new'] == '&lt;pre&gt;%s&lt;/pre&gt;' % states[k]
+        assert len(events) == 2
+        event1, event2 = events
+        assert event1['kind'] == 'ModelChanged'
+        assert event1['attr'] == 'text'
+        assert event1['model'] == model.children[0].children[0].ref
+        assert event1['new'] == '<b>%s</b>' % states[k]
 
+        assert event2['kind'] == 'ModelChanged'
+        assert event2['attr'] == 'text'
+        assert event2['model'] == model.children[1].ref
+        assert event2['new'] == '&lt;pre&gt;%s&lt;/pre&gt;' % states[k]
+
+def test_embed_float_slider_default_value(document, comm):
+    slider = FloatSlider(start=0, end=7.2, value=3.6)
+    string = Str()
+    def link(target, event):
+        target.object = event.new
+    slider.link(string, callbacks={'value': link})
+    panel = Row(slider, string)
+    with config.set(embed=True):
+        model = panel.get_root(document, comm)
+    embed_state(panel, model, document)
+    layout, state = document.roots
+    assert set(state.state) == {0, 1, 2}
+    assert layout.children[0].children[1].value == 1
 
 def test_embed_select_explicit_values(document, comm):
     select = Select(options=['A', 'B', 'C'])
@@ -365,12 +386,17 @@ def test_embed_slider_str_link(document, comm):
         content = json.loads(v['content'])
         assert 'events' in content
         events = content['events']
-        assert len(events) == 1
-        event = events[0]
-        assert event['kind'] == 'ModelChanged'
-        assert event['attr'] == 'text'
-        assert event['model'] == model.children[1].ref
-        assert event['new'] == '&lt;pre&gt;%.1f&lt;/pre&gt;' % values[k]
+        assert len(events) == 2
+        event1, event2 = events
+        assert event1['kind'] == 'ModelChanged'
+        assert event1['attr'] == 'text'
+        assert event1['model'] == model.children[0].children[0].ref
+        assert event1['new'] == '<b>%d</b>' % values[k]
+
+        assert event2['kind'] == 'ModelChanged'
+        assert event2['attr'] == 'text'
+        assert event2['model'] == model.children[1].ref
+        assert event2['new'] == '&lt;pre&gt;%.1f&lt;/pre&gt;' % values[k]
 
 
 def test_embed_slider_str_jslink(document, comm):
@@ -446,19 +472,27 @@ def test_embed_merged_sliders(document, comm):
     assert len(cbs) == 5
 
     ref1, ref2 = model.children[2].ref['id'], model.children[3].ref['id']
+    ref3 = model.children[0].children[0].ref['id']
+    ref4 = model.children[1].children[0].ref['id']
     state0 = json.loads(state_model.state[0]['content'])['events']
     assert state0 == [
+        {'attr': 'text', 'kind': 'ModelChanged', 'model': {'id': ref3}, 'new': 'A: <b>1</b>', 'hint': None},
         {"attr": "text", "kind": "ModelChanged", "model": {"id": ref1}, "new": "1", "hint": None},
+        {'attr': 'text', 'kind': 'ModelChanged', 'model': {'id': ref4}, 'new': 'A: <b>1</b>', 'hint': None},
         {"attr": "text", "kind": "ModelChanged", "model": {"id": ref2}, "new": "1", "hint": None}
     ]
     state1 = json.loads(state_model.state[1]['content'])['events']
     assert state1 == [
+        {'attr': 'text', 'kind': 'ModelChanged', 'model': {'id': ref3}, 'new': 'A: <b>5</b>', 'hint': None},
         {"attr": "text", "kind": "ModelChanged", "model": {"id": ref1}, "new": "5", "hint": None},
+        {'attr': 'text', 'kind': 'ModelChanged', 'model': {'id': ref4}, 'new': 'A: <b>5</b>', 'hint': None},
         {"attr": "text", "kind": "ModelChanged", "model": {"id": ref2}, "new": "5", "hint": None}
     ]
     state2 = json.loads(state_model.state[2]['content'])['events']
     assert state2 == [
+        {'attr': 'text', 'kind': 'ModelChanged', 'model': {'id': ref3}, 'new': 'A: <b>9</b>', 'hint': None},
         {"attr": "text", "kind": "ModelChanged", "model": {"id": ref1}, "new": "9", "hint": None},
+        {'attr': 'text', 'kind': 'ModelChanged', 'model': {'id': ref4}, 'new': 'A: <b>9</b>', 'hint': None},
         {"attr": "text", "kind": "ModelChanged", "model": {"id": ref2}, "new": "9", "hint": None}
     ]
 
@@ -516,3 +550,13 @@ def test_save_embed_json(tmpdir):
         assert event['kind'] == 'ModelChanged'
         assert event['attr'] == 'text'
         assert event['new'] == '&lt;pre&gt;%s&lt;/pre&gt;' % v
+
+def test_embed_widget_disabled(document, comm):
+    select = Select(options=['A', 'B', 'C'], disabled=True)
+    string = Str()
+    select.link(string, value='object')
+    string.param.watch(print, 'object')
+    panel = Row(select, string)
+    with config.set(embed=True):
+        model = panel.get_root(document, comm)
+    assert embed_state(panel, model, document) is None

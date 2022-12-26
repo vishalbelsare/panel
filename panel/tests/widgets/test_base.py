@@ -4,16 +4,16 @@ import pytest
 from panel.io import block_comm
 from panel.layout import Row
 from panel.links import CallbackGenerator
+from panel.tests.util import check_layoutable_properties
 from panel.widgets import (
-    CompositeWidget, Dial, FileDownload, FloatSlider, TextInput,
-    Terminal, ToggleGroup, Tqdm, Widget
+    CompositeWidget, Dial, FileDownload, FloatSlider, LinearGauge, Terminal,
+    TextInput, ToggleGroup, Tqdm, Widget,
 )
 from panel.widgets.tables import BaseTable
-from panel.tests.util import check_layoutable_properties
 
 excluded = (
-    BaseTable, CompositeWidget, Dial, FileDownload, ToggleGroup, Terminal,
-    Tqdm
+    BaseTable, CompositeWidget, Dial, FileDownload, LinearGauge,
+    ToggleGroup, Terminal, Tqdm
 )
 
 all_widgets = [
@@ -132,6 +132,22 @@ def test_widget_from_param_cls():
     assert Test.a == 'def'
 
 
+def test_widget_from_param_negative_precedence():
+    class Test(param.Parameterized):
+
+        a = param.Parameter(precedence=-1)
+
+    widget = TextInput.from_param(Test.param.a)
+    assert isinstance(widget, TextInput)
+    assert widget.name == 'A'
+
+    Test.a = 'abc'
+    assert widget.value == 'abc'
+
+    widget.value = 'def'
+    assert Test.a == 'def'
+
+
 def test_widget_from_param_instance():
     class Test(param.Parameterized):
 
@@ -167,4 +183,3 @@ def test_widget_from_param_instance_with_kwargs():
 
     widget.value = 4.3
     assert test.a == 4.3
-

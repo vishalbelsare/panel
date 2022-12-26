@@ -1,10 +1,14 @@
-import sys
-import shutil
+from __future__ import annotations
+
 import asyncio
+import shutil
+import sys
 
 from functools import partial
-from threading import Thread
 from queue import Queue as SyncQueue
+from threading import Thread
+from typing import TYPE_CHECKING, Optional
+
 from packaging.version import Version
 
 from ..io.notebook import push_on_root
@@ -13,6 +17,10 @@ from ..io.state import state
 from ..models import IDOM as _BkIDOM
 from .base import PaneBase
 
+if TYPE_CHECKING:
+    from bokeh.document import Document
+    from bokeh.model import Model
+    from pyviz_comms import Comm
 
 _IDOM_MIN_VER = "0.23"
 _IDOM_MAX_VER = "0.24"
@@ -34,6 +42,22 @@ def _spawn_threaded_event_loop(coro):
 
 
 class IDOM(PaneBase):
+    """
+    The `IDOM` pane renders any IDOM component both in the notebook and in a
+    deployed server.
+
+    IDOM defines an API for defining and controlling interactive HTML
+    components directly from Python.
+
+    Note that in the notebook the IDOM support for loading external modules
+    relies on Panel’s Jupyter serverextension.
+
+    Reference: https://panel.holoviz.org/reference/panes/IDOM.html
+
+    :Example:
+
+    >>> IDOM(ClickCount, width=300)
+    """
 
     priority = None
 
@@ -73,9 +97,12 @@ class IDOM(PaneBase):
             self._idom_layout = Layout(self.object())
         self._idom_loop = _spawn_threaded_event_loop(self._idom_layout_render_loop())
 
-    def _get_model(self, doc, root=None, parent=None, comm=None):
-        from idom.core.layout import LayoutUpdate
+    def _get_model(
+        self, doc: Document, root: Optional[Model] = None,
+        parent: Optional[Model] = None, comm: Optional[Comm] = None
+    ) -> Model:
         from idom.config import IDOM_CLIENT_IMPORT_SOURCE_URL
+        from idom.core.layout import LayoutUpdate
 
         # let the client determine import source location
         IDOM_CLIENT_IMPORT_SOURCE_URL.set("./")
@@ -102,7 +129,7 @@ class IDOM(PaneBase):
         self._models[root.ref['id']] = (model, parent)
         return model
 
-    def _cleanup(self, root):
+    def _cleanup(self, root: Model | None = None) -> None:
         super()._cleanup(root)
         if not self._models:
             # Clean up loop when no views are shown
@@ -164,6 +191,7 @@ class IDOM(PaneBase):
           The fallback to display while the component is loading
         """
         import idom
+
         from idom.config import IDOM_CLIENT_BUILD_DIR
         idom_dist_dir = DIST_DIR / "idom"
         idom_build_dir = idom_dist_dir / "build"
@@ -193,6 +221,7 @@ class IDOM(PaneBase):
         An idom state value which is updated when the parameter changes.
         """
         import idom
+
         from ..depends import param_value_if_widget
         parameter = param_value_if_widget(parameter)
         initial = getattr(parameter.owner, parameter.name)

@@ -7,16 +7,16 @@ import inspect
 import logging
 import time
 
+from functools import partial
+
 import param
 
-from bokeh.io import curdoc as _curdoc
-
 from ..util import edit_readonly, function_name
-from .logging import LOG_PERIODIC_START, LOG_PERIODIC_END
-from .state import state
+from .logging import LOG_PERIODIC_END, LOG_PERIODIC_START
+from .state import curdoc_locked, state
 
+log = logging.getLogger('panel.callbacks')
 _periodic_logger = logging.getLogger(f'{__name__}.PeriodicCallback')
-
 
 class PeriodicCallback(param.Parameterized):
     """
@@ -36,6 +36,9 @@ class PeriodicCallback(param.Parameterized):
         Number of times the callback will be executed, by default
         this is unlimited.""")
 
+    log = param.Boolean(default=True, doc="""
+        Whether the periodic callback should log its actions.""")
+
     period = param.Integer(default=500, doc="""
         Period in milliseconds at which the callback is executed.""")
 
@@ -47,6 +50,7 @@ class PeriodicCallback(param.Parameterized):
         Toggles whether the periodic callback is currently running.""")
 
     def __init__(self, **params):
+        self._background = params.pop('background', False)
         super().__init__(**params)
         self._counter = 0
         self._start_time = None
@@ -72,26 +76,26 @@ class PeriodicCallback(param.Parameterized):
             self.stop()
             self.start()
 
-    async def _periodic_callback(self):
-        with edit_readonly(state):
-            state.busy = True
-        cbname = function_name(self.callback)
-        if self._doc:
-            _periodic_logger.info(
-                LOG_PERIODIC_START, id(self._doc), cbname, self._counter
-            )
+    def _exec_callback(self, post=False):
+        from .state import set_curdoc
         try:
-            if inspect.isasyncgenfunction(self.callback) or inspect.iscoroutinefunction(self.callback):
-                await self.callback()
-            else:
-                self.callback()
-        finally:
-            if self._doc:
-                _periodic_logger.info(
-                    LOG_PERIODIC_END, id(self._doc), cbname, self._counter
-                )
+            with set_curdoc(self._doc):
+                cb = self.callback()
+        except Exception:
+            cb = None
+        if post:
+            self._post_callback()
+        return cb
+
+    def _post_callback(self):
+        cbname = function_name(self.callback)
+        if self._doc and self.log:
+            _periodic_logger.info(
+                LOG_PERIODIC_END, id(self._doc), cbname, self._counter
+            )
+        if not self._background:
             with edit_readonly(state):
-                state.busy = False
+                state._busy_counter -= 1
         self._counter += 1
         if self.timeout is not None:
             dt = (time.time() - self._start_time) * 1000
@@ -100,12 +104,53 @@ class PeriodicCallback(param.Parameterized):
         if self._counter == self.count:
             self.stop()
 
+    async def _periodic_callback(self):
+        if not self._background:
+            with edit_readonly(state):
+                state._busy_counter += 1
+        cbname = function_name(self.callback)
+        if self._doc and self.log:
+            _periodic_logger.info(
+                LOG_PERIODIC_START, id(self._doc), cbname, self._counter
+            )
+        is_async = (
+            inspect.isasyncgenfunction(self.callback) or
+            inspect.iscoroutinefunction(self.callback)
+        )
+        if state._thread_pool and not is_async:
+            future = state._thread_pool.submit(self._exec_callback, True)
+            future.add_done_callback(partial(state._handle_future_exception, doc=self._doc))
+            return
+        try:
+            cb = self._exec_callback()
+            if inspect.isawaitable(cb):
+                await cb
+        except Exception:
+            log.exception('Periodic callback failed.')
+            raise
+        finally:
+            self._post_callback()
+
     @property
     def counter(self):
         """
         Returns the execution count of the periodic callback.
         """
         return self._counter
+
+    async def _async_repeat(self, func):
+        """
+        Run func every interval seconds.
+
+        If func has not finished before *interval*, will run again
+        immediately when the previous iteration finished.
+        """
+        while True:
+            start = time.monotonic()
+            await func()
+            timeout = (self.period/1000.) - (time.monotonic()-start)
+            if timeout > 0:
+                await asyncio.sleep(timeout)
 
     def _cleanup(self, session_context):
         self.stop()
@@ -123,17 +168,20 @@ class PeriodicCallback(param.Parameterized):
             finally:
                 self._updating = False
         self._start_time = time.time()
-        if state.curdoc:
+        if state._is_pyodide:
+            self._cb = asyncio.create_task(
+                self._async_repeat(self._periodic_callback)
+            )
+        elif state.curdoc:
             self._doc = state.curdoc
-            self._cb = self._doc.add_periodic_callback(self._periodic_callback, self.period)
+            if state._unblocked(state.curdoc):
+                self._cb = self._doc.add_periodic_callback(self._periodic_callback, self.period)
+            else:
+                self._doc.add_next_tick_callback(self.start)
         else:
             from tornado.ioloop import PeriodicCallback
             self._cb = PeriodicCallback(lambda: asyncio.create_task(self._periodic_callback()), self.period)
             self._cb.start()
-        try:
-            state.on_session_destroyed(self._cleanup)
-        except Exception:
-            pass
 
     def stop(self):
         """
@@ -147,7 +195,9 @@ class PeriodicCallback(param.Parameterized):
                 self._updating = False
         self._counter = 0
         self._timeout = None
-        if self._doc:
+        if state._is_pyodide:
+            self._cb.cancel()
+        elif self._doc:
             if self._doc._session_context:
                 self._doc.callbacks.remove_session_callback(self._cb)
             else:
@@ -155,7 +205,7 @@ class PeriodicCallback(param.Parameterized):
         elif self._cb:
             self._cb.stop()
         self._cb = None
-        doc = self._doc or _curdoc()
+        doc = self._doc or curdoc_locked()
         if doc:
             doc.callbacks.session_destroyed_callbacks = {
                 cb for cb in doc.callbacks.session_destroyed_callbacks

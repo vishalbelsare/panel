@@ -1,12 +1,12 @@
-# coding: utf-8
-
-import os
 import base64
+import os
+import sys
+
 from io import BytesIO
 from zipfile import ZipFile
 
-import pytest
 import numpy as np
+import pytest
 
 try:
     import vtk
@@ -18,15 +18,18 @@ try:
 except Exception:
     pv = None
 
-from six import string_types
 from bokeh.models import ColorBar
 
-from panel.models.vtk import VTKJSPlot, VTKVolumePlot, VTKAxes, VTKSynchronizedPlot
-from panel.pane import PaneBase, VTKVolume, VTK
-from panel.pane.vtk.vtk import VTKJS, VTKRenderWindowSynchronized, VTKRenderWindow
+from panel.models.vtk import (
+    VTKAxes, VTKJSPlot, VTKSynchronizedPlot, VTKVolumePlot,
+)
+from panel.pane import VTK, PaneBase, VTKVolume
+from panel.pane.vtk.vtk import (
+    VTKJS, VTKRenderWindow, VTKRenderWindowSynchronized,
+)
 
 vtk_available = pytest.mark.skipif(vtk is None, reason="requires vtk")
-pyvista_available = pytest.mark.skipif(pv is None, reason="requires pyvista")
+pyvista_available = pytest.mark.skipif((pv is None) or (vtk is None), reason="requires pyvista")
 
 
 def make_render_window():
@@ -127,7 +130,7 @@ def test_get_vtkvol_pane_type_from_vtk_image():
     image_data = make_image_data()
     assert PaneBase.get_pane_type(image_data) is VTKVolume
 
-
+@pytest.mark.skip(reason="vtk=9.0.1=no_osmesa not currently available")
 def test_vtkjs_pane(document, comm, tmp_path):
     # from url
     url = r'https://raw.githubusercontent.com/Kitware/vtk-js/master/Data/StanfordDragon.vtkjs'
@@ -138,7 +141,7 @@ def test_vtkjs_pane(document, comm, tmp_path):
     model = pane_from_url.get_root(document, comm=comm)
     assert isinstance(model, VTKJSPlot)
     assert pane_from_url._models[model.ref['id']][0] is model
-    assert isinstance(model.data, string_types)
+    assert isinstance(model.data, str)
 
     with BytesIO(base64.b64decode(model.data.encode())) as in_memory:
         with ZipFile(in_memory) as zf:
@@ -160,6 +163,7 @@ def test_vtkjs_pane(document, comm, tmp_path):
 
 
 @vtk_available
+@pytest.mark.skipif(sys.platform == "win32", reason="cache cleanup fails on windows")
 def test_vtk_pane_from_renwin(document, comm):
     renWin = make_render_window()
     pane = VTK(renWin)
@@ -177,6 +181,7 @@ def test_vtk_pane_from_renwin(document, comm):
     assert len(ctx.dataArrayCache.keys()) == 5
     # Force 0s for removing arrays
     ctx.checkForArraysToRelease(0)
+
     assert len(ctx.dataArrayCache.keys()) == 0
 
     # Cleanup
@@ -321,6 +326,7 @@ def test_vtkvol_pane_from_np_array(document, comm):
 
     pane.object = np.ones((10,10,10))
     from operator import eq
+
     # Create pane
     assert isinstance(model, VTKVolumePlot)
     assert pane._models[model.ref['id']][0] is model
@@ -361,6 +367,7 @@ def test_vtkvol_pane_from_image_data(document, comm):
     image_data = make_image_data()
     pane = VTKVolume(image_data)
     from operator import eq
+
     # Create pane
     model = pane.get_root(document, comm=comm)
     assert isinstance(model, VTKVolumePlot)

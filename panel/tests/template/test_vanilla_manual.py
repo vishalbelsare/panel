@@ -1,11 +1,12 @@
-import panel as pn
-import numpy as np
 import holoviews as hv
+import numpy as np
+
+import panel as pn
 
 LOGO = "https://panel.holoviz.org/_static/logo_horizontal.png"
 
 
-def test_vanilla_with_sidebar():
+def manualtest_vanilla_with_sidebar():
     """Returns an app that uses the vanilla template in various ways.
 
 Inspect the app and verify that the issues of [Issue 1641]\
@@ -36,7 +37,7 @@ Inspect the app and verify that the issues of [Issue 1641]\
 
     vanilla.sidebar.append(freq)
     vanilla.sidebar.append(phase)
-    vanilla.sidebar.append(pn.pane.Markdown(test_vanilla_with_sidebar.__doc__))
+    vanilla.sidebar.append(pn.pane.Markdown(manualtest_vanilla_with_sidebar.__doc__))
     vanilla.sidebar.append(pn.pane.Markdown("## Sidebar Item\n" * 50))
 
     vanilla.main.append(
@@ -64,7 +65,7 @@ Inspect the app and verify that the issues of [Issue 1641]\
     return vanilla
 
 
-def test_vanilla_with_no_sidebar():
+def manualtest_vanilla_with_no_sidebar():
     """Returns an app that uses the vanilla template in various ways.
 
 Inspect the app and verify that the issues of [Issue 1641]\
@@ -96,7 +97,7 @@ Inspect the app and verify that the issues of [Issue 1641]\
 
     vanilla.main.append(freq)
     vanilla.main.append(phase)
-    vanilla.main.append(pn.pane.Markdown(test_vanilla_with_no_sidebar.__doc__))
+    vanilla.main.append(pn.pane.Markdown(manualtest_vanilla_with_no_sidebar.__doc__))
     vanilla.main.append(
         pn.Row(
             pn.Card(hv.DynamicMap(sine), title="Sine"),
@@ -124,5 +125,5 @@ Inspect the app and verify that the issues of [Issue 1641]\
 
 if __name__.startswith("bokeh"):
     pn.extension(sizing_mode="stretch_width")
-    test_vanilla_with_sidebar().servable()
-    # test_vanilla_with_no_sidebar().servable()
+    manualtest_vanilla_with_sidebar().servable()
+    # manualtest_vanilla_with_no_sidebar().servable()

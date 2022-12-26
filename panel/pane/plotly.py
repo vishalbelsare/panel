@@ -2,25 +2,46 @@
 Defines a PlotlyPane which renders a plotly plot using PlotlyPlot
 bokeh model.
 """
+from __future__ import annotations
+
+from typing import (
+    TYPE_CHECKING, Any, ClassVar, Optional,
+)
+
 import numpy as np
 import param
 
-from bokeh.models import ColumnDataSource, CustomJS, Tabs
+from bokeh.models import ColumnDataSource
 from pyviz_comms import JupyterComm
 
-from .base import PaneBase
 from ..util import isdatetime, lazy_load
-from ..viewable import Layoutable, Viewable
+from ..viewable import Layoutable
+from .base import PaneBase
 
+if TYPE_CHECKING:
+    from bokeh.document import Document
+    from bokeh.model import Model
+    from pyviz_comms import Comm
 
 
 class Plotly(PaneBase):
     """
-    Plotly panes allow rendering plotly Figures and traces.
+    The `Plotly` pane renders Plotly plots inside a panel.
 
-    For efficiency any array objects found inside a Figure are added
-    to a ColumnDataSource which allows using binary transport to sync
-    the figure on bokeh server and via Comms.
+    Note that
+
+    - the Panel `extension` has to be loaded with `plotly` as an argument to
+    ensure that Plotly.js is initialized.
+    - it supports click, hover and selection events.
+    - it optimizes the plot rendering by using binary serialization for any
+    array data found on the Plotly object.
+
+    Reference: https://panel.holoviz.org/reference/panes/Plotly.html
+
+    :Example:
+
+    >>> pn.extension('plotly')
+    >>> Plotly(some_plotly_figure, width=500, height=500)
     """
 
     click_data = param.Dict(doc="Click callback data")
@@ -56,12 +77,12 @@ class Plotly(PaneBase):
     _render_count = param.Integer(default=0, doc="""
         Number of renders, increment to trigger re-render""")
 
-    priority = 0.8
+    priority: ClassVar[float | bool | None] = 0.8
 
-    _updates = True
+    _updates: ClassVar[bool] = True
 
     @classmethod
-    def applies(cls, obj):
+    def applies(cls, obj: Any) -> float | bool | None:
         return ((isinstance(obj, list) and obj and all(cls.applies(o) for o in obj)) or
                 hasattr(obj, 'to_plotly_json') or (isinstance(obj, dict)
                                                    and 'data' in obj and 'layout' in obj))
@@ -241,22 +262,24 @@ class Plotly(PaneBase):
         params['data'] = json.get('data', [])
         params['data_sources'] = sources
         params['layout'] = layout = json.get('layout', {})
+        params['frames'] = json.get('frames', [])
         if layout.get('autosize') and self.sizing_mode is self.param.sizing_mode.default:
             params['sizing_mode'] = 'stretch_both'
         return params
 
-    def _get_model(self, doc, root=None, parent=None, comm=None):
+    def _get_model(
+        self, doc: Document, root: Optional[Model] = None,
+        parent: Optional[Model] = None, comm: Optional[Comm] = None
+    ) -> Model:
         PlotlyPlot = lazy_load('panel.models.plotly', 'PlotlyPlot', isinstance(comm, JupyterComm), root)
         model = PlotlyPlot(**self._init_params())
         if root is None:
             root = model
         self._link_props(model, self._linkable_params, doc, root, comm)
         self._models[root.ref['id']] = (model, parent)
-        if _patch_tabs_plotly not in Viewable._preprocessing_hooks:
-            Viewable._preprocessing_hooks.append(_patch_tabs_plotly)
         return model
 
-    def _update(self, ref=None, model=None):
+    def _update(self, ref: str, model: Model) -> None:
         if self.object is None:
             model.update(data=[], layout={})
             model._render_count += 1
@@ -265,6 +288,7 @@ class Plotly(PaneBase):
         fig = self._to_figure(self.object)
         json = self._plotly_json_wrapper(fig)
         layout = json.get('layout')
+        frames = json.get('frames')
 
         traces = json['data']
         new_sources = []
@@ -278,6 +302,7 @@ class Plotly(PaneBase):
 
             update_sources = self._update_data_sources(cds, trace) or update_sources
 
+        # Determine if layout needs update
         try:
             update_layout = model.layout != layout
         except Exception:
@@ -299,6 +324,12 @@ class Plotly(PaneBase):
                 if update_data:
                     break
 
+        # Determine if frames needs update
+        try:
+            update_frames = model.frames != frames
+        except Exception:
+            update_frames = True
+
         updates = {}
         if self.sizing_mode is self.param.sizing_mode.default and 'autosize' in layout:
             autosize = layout.get('autosize')
@@ -316,91 +347,12 @@ class Plotly(PaneBase):
         if update_layout:
             updates['layout'] = layout
 
+        if update_frames:
+            updates['frames'] = frames or []
+
         if updates:
             model.update(**updates)
 
         # Check if we should trigger rendering
         if updates or update_sources:
             model._render_count += 1
-
-
-def _patch_tabs_plotly(viewable, root):
-    """
-    A preprocessing hook which ensures that any Plotly panes rendered
-    inside Tabs are only visible when the tab they are in is active.
-    This is a workaround for https://github.com/holoviz/panel/issues/804.
-    """
-    from ..models.plotly import PlotlyPlot
-
-    # Clear args on old callback so references aren't picked up
-    old_callbacks = {}
-    for tmodel in root.select({'type': Tabs}):
-        old_callbacks[tmodel] = {
-            k: [cb for cb in cbs] for k, cbs in tmodel.js_property_callbacks.items()
-        }
-        for cb in tmodel.js_property_callbacks.get('change:active', []):
-            if any(tag.startswith('plotly_tab_fix') for tag in cb.tags):
-                # Have to unset owners so property is not notified
-                owners = cb.args._owners
-                cb.args._owners = set()
-                cb.args.clear()
-                cb.args._owners = owners
-
-    tabs_models = list(root.select({'type': Tabs}))
-    plotly_models = list(root.select({'type': PlotlyPlot}))
-
-    tab_callbacks = {}
-    for model in plotly_models:
-        parent_tabs = [tmodel for tmodel in tabs_models if tmodel.select_one({'id': model.id})]
-        active = True
-        args = {'model': model}
-        tag = f'plotly_tab_fix{model.id}'
-
-        # Generate condition that determines whether tab containing
-        # the plot is active
-        condition = ''
-        for tabs in list(parent_tabs):
-            # Find tab that contains plot
-            found = False
-            for i, tab in enumerate(tabs.tabs):
-                if tab.select_one({'id': model.id}):
-                    found = True
-                    break
-            if not found:
-                parent_tabs.remove(tabs)
-                continue
-            if condition:
-                condition += ' && '
-            condition += f"(tabs_{tabs.id}.active == {i})"
-            args.update({f'tabs_{tabs.id}': tabs})
-            active &= tabs.active == i
-
-        model.visibility = active
-        code = f'try {{ model.visibility = {condition}; }} catch {{ }}'
-        for tabs in parent_tabs:
-            tab_key = f'tabs_{tabs.id}'
-            cb_args = dict(args)
-            cb_code = code.replace(tab_key, 'cb_obj')
-            cb_args.pop(tab_key)
-            callback = CustomJS(args=cb_args, code=cb_code, tags=[tag])
-            if tabs not in tab_callbacks:
-                tab_callbacks[tabs] = []
-            tab_callbacks[tabs].append(callback)
-
-    for tabs, callbacks in tab_callbacks.items():
-        new_cbs = []
-        for cb in callbacks:
-            found = False
-            for old_cb in tabs.js_property_callbacks.get('change:active', []):
-                if cb.tags[0] in old_cb.tags:
-                    found = True
-                    old_cb.update(code=cb.code)
-                    # Reapply args without notifying property system
-                    owners = old_cb.args._owners
-                    old_cb.args._owners = set()
-                    old_cb.args.update(cb.args)
-                    old_cb.args._owners = owners
-            if not found:
-                new_cbs.append(cb)
-        if new_cbs:
-            tabs.js_on_change('active', *new_cbs)

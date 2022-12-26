@@ -2,16 +2,21 @@
 Contains Image panes including renderers for PNG, SVG, GIF and JPG
 file types.
 """
+from __future__ import annotations
+
+import asyncio
 import base64
-from pathlib import PurePath
 
 from io import BytesIO
-from six import string_types
+from pathlib import PurePath
+from typing import (
+    Any, ClassVar, List, Mapping,
+)
 
 import param
 
-from .markup import escape, DivPaneBase
 from ..util import isfile, isurl
+from .markup import DivPaneBase, escape
 
 
 class FileBase(DivPaneBase):
@@ -19,7 +24,9 @@ class FileBase(DivPaneBase):
     embed = param.Boolean(default=True, doc="""
         Whether to embed the file as base64.""")
 
-    _rerender_params = ['embed', 'object', 'style', 'width', 'height']
+    _rerender_params: ClassVar[List[str]] = [
+        'embed', 'object', 'style', 'width', 'height'
+    ]
 
     __abstract = True
 
@@ -29,23 +36,31 @@ class FileBase(DivPaneBase):
         super().__init__(object=object, **params)
 
     def _type_error(self, object):
-        if isinstance(object, string_types):
+        if isinstance(object, str):
             raise ValueError("%s pane cannot parse string that is not a filename "
                              "or URL." % type(self).__name__)
         super()._type_error(object)
 
     @classmethod
-    def applies(cls, obj):
+    def applies(cls, obj: Any) -> float | bool | None:
         filetype = cls.filetype
         if hasattr(obj, '_repr_{}_'.format(filetype)):
             return True
-        if isinstance(obj, string_types):
+        if isinstance(obj, PurePath):
+            obj = str(obj.absolute())
+        if isinstance(obj, str):
             if isfile(obj) and obj.endswith('.'+filetype):
                 return True
             if isurl(obj, [cls.filetype]):
                 return True
             elif isurl(obj, None):
                 return 0
+        elif isinstance(obj, bytes):
+            try:
+                cls._imgshape(obj)
+                return True
+            except Exception:
+                return False
         if hasattr(obj, 'read'):  # Check for file like object
             return True
         return False
@@ -53,18 +68,31 @@ class FileBase(DivPaneBase):
     def _data(self):
         if hasattr(self.object, '_repr_{}_'.format(self.filetype)):
             return getattr(self.object, '_repr_' + self.filetype + '_')()
-        if isinstance(self.object, string_types):
+        if isinstance(self.object, str):
             if isfile(self.object):
                 with open(self.object, 'rb') as f:
                     return f.read()
+        elif isinstance(self.object, bytes):
+            return self.object
         if hasattr(self.object, 'read'):
             if hasattr(self.object, 'seek'):
                 self.object.seek(0)
             return self.object.read()
         if isurl(self.object, None):
-            import requests
-            r = requests.request(url=self.object, method='GET')
-            return r.content
+            from ..io.state import state
+            if state._is_pyodide:
+                from ..io.pyodide import _IN_WORKER, fetch_binary
+                if _IN_WORKER:
+                    return fetch_binary(self.object).read()
+                else:
+                    from pyodide.http import pyfetch
+                    async def replace_content():
+                        self.object = await (await pyfetch(self.object)).bytes()
+                    asyncio.create_task(replace_content())
+            else:
+                import requests
+                r = requests.request(url=self.object, method='GET')
+                return r.content
 
 
 class ImageBase(FileBase):
@@ -89,11 +117,15 @@ class ImageBase(FileBase):
         A link URL to make the image clickable and link to some other
         website.""")
 
-    filetype = 'None'
+    filetype: ClassVar[str] = 'None'
 
-    _rerender_params = ['alt_text', 'link_url', 'embed', 'object', 'style', 'width', 'height']
+    _rerender_params: ClassVar[List[str]] = [
+        'alt_text', 'link_url', 'embed', 'object', 'style', 'width', 'height'
+    ]
 
-    _target_transforms = {'object': """'<img src="' + value + '"></img>'"""}
+    _target_transforms: ClassVar[Mapping[str, str | None]] = {
+        'object': """'<img src="' + value + '"></img>'"""
+    }
 
     __abstract = True
 
@@ -113,6 +145,8 @@ class ImageBase(FileBase):
         if self.object is None:
             return dict(p, text='<img></img>')
         data = self._data()
+        if data is None:
+            return dict(p, text='<img></img>')
         if not isinstance(data, bytes):
             data = base64.b64decode(data)
         width, height = self._imgshape(data)
@@ -156,8 +190,23 @@ class ImageBase(FileBase):
 
 
 class PNG(ImageBase):
+    """
+    The `PNG` pane embeds a .png image file in a panel if provided a local
+    path, or will link to a remote image if provided a URL.
 
-    filetype = 'png'
+    Reference: https://panel.holoviz.org/reference/panes/PNG.html
+
+    :Example:
+
+    >>> PNG(
+    ...     'https://panel.holoviz.org/_static/logo_horizontal.png',
+    ...     alt_text='The Panel Logo',
+    ...     link_url='https://panel.holoviz.org/index.html',
+    ...     width=500
+    ... )
+    """
+
+    filetype: ClassVar[str] = 'png'
 
     @classmethod
     def _imgshape(cls, data):
@@ -167,8 +216,23 @@ class PNG(ImageBase):
 
 
 class GIF(ImageBase):
+    """
+    The `GIF` pane embeds a .gif image file in a panel if provided a local
+    path, or will link to a remote image if provided a URL.
 
-    filetype = 'gif'
+    Reference: https://panel.holoviz.org/reference/panes/GIF.html
+
+    :Example:
+
+    >>> GIF(
+    ...     'https://upload.wikimedia.org/wikipedia/commons/b/b1/Loading_icon.gif',
+    ...     alt_text='A loading spinner',
+    ...     link_url='https://commons.wikimedia.org/wiki/File:Loading_icon.gif',
+    ...     width=500
+    ... )
+    """
+
+    filetype: ClassVar[str] = 'gif'
 
     @classmethod
     def _imgshape(cls, data):
@@ -178,8 +242,23 @@ class GIF(ImageBase):
 
 
 class ICO(ImageBase):
+    """
+    The `ICO` pane embeds an .ico image file in a panel if provided a local
+    path, or will link to a remote image if provided a URL.
 
-    filetype = 'ico'
+    Reference: https://panel.holoviz.org/reference/panes/ICO.html
+
+    :Example:
+
+    >>> ICO(
+    ...     some_url,
+    ...     alt_text='An .ico file',
+    ...     link_url='https://en.wikipedia.org/wiki/ICO_(file_format)',
+    ...     width=50
+    ...
+    """
+
+    filetype: ClassVar[str] = 'ico'
 
     @classmethod
     def _imgshape(cls, data):
@@ -189,8 +268,23 @@ class ICO(ImageBase):
 
 
 class JPG(ImageBase):
+    """
+    The `JPG` pane embeds a .jpg or .jpeg image file in a panel if provided a
+    local path, or will link to a remote image if provided a URL.
 
-    filetype = 'jpg'
+    Reference: https://panel.holoviz.org/reference/panes/JPG.html
+
+    :Example:
+
+    >>> JPG(
+    ...     'https://www.gstatic.com/webp/gallery/4.sm.jpg',
+    ...     alt_text='A nice tree',
+    ...     link_url='https://en.wikipedia.org/wiki/JPEG',
+    ...     width=500
+    ... )
+    """
+
+    filetype: ClassVar[str] = 'jpg'
 
     @classmethod
     def _imgshape(cls, data):
@@ -212,28 +306,43 @@ class JPG(ImageBase):
 
 
 class SVG(ImageBase):
+    """
+    The `SVG` pane embeds a .svg image file in a panel if provided a
+    local path, or will link to a remote image if provided a URL.
+
+    Reference: https://panel.holoviz.org/reference/panes/SVG.html
+
+    :Example:
+
+    >>> SVG(
+    ...     'https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg',
+    ...     alt_text='A gif vs svg comparison',
+    ...     link_url='https://en.wikipedia.org/wiki/SVG',
+    ...     width=300, height=400
+    ... )
+    """
 
     encode = param.Boolean(default=False, doc="""
         Whether to enable base64 encoding of the SVG, base64 encoded
         SVGs do not support links.""")
 
-    filetype = 'svg'
+    filetype: ClassVar[str] = 'svg'
 
-    _rerender_params = ImageBase._rerender_params + ['encode']
+    _rerender_params: ClassVar[List[str]] = ImageBase._rerender_params + ['encode']
 
     @classmethod
-    def applies(cls, obj):
+    def applies(cls, obj: Any) -> float | bool | None:
         return (super().applies(obj) or
-                (isinstance(obj, string_types) and obj.lstrip().startswith('<svg')))
+                (isinstance(obj, str) and obj.lstrip().startswith('<svg')))
 
     def _type_error(self, object):
-        if isinstance(object, string_types):
+        if isinstance(object, str):
             raise ValueError("%s pane cannot parse string that is not a filename, "
                              "URL or a SVG XML contents." % type(self).__name__)
         super()._type_error(object)
 
     def _data(self):
-        if (isinstance(self.object, string_types) and
+        if (isinstance(self.object, str) and
             self.object.lstrip().startswith('<svg')):
             return self.object
         return super()._data()
@@ -269,8 +378,21 @@ class SVG(ImageBase):
 
 
 class PDF(FileBase):
+    """
+    The `PDF` pane embeds a .pdf image file in a panel if provided a
+    local path, or will link to a remote image if provided a URL.
 
-    filetype = 'pdf'
+    Reference: https://panel.holoviz.org/reference/panes/PDF.html
+
+    :Example:
+
+    >>> PDF(
+    ...     'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    ...     width=300, height=410
+    ... )
+    """
+
+    filetype: ClassVar[str] = 'pdf'
 
     def _get_properties(self):
         p = super()._get_properties()

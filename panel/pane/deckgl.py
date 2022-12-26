@@ -2,9 +2,15 @@
 Defines a PyDeck Pane which renders a PyDeck plot using a PyDeckPlot
 bokeh model.
 """
+from __future__ import annotations
+
 import json
+import sys
 
 from collections import defaultdict
+from typing import (
+    TYPE_CHECKING, Any, ClassVar, Mapping, Optional,
+)
 
 import numpy as np
 import param
@@ -12,13 +18,19 @@ import param
 from bokeh.models import ColumnDataSource
 from pyviz_comms import JupyterComm
 
-from ..util import is_dataframe, lazy_load, string_types
+from ..util import is_dataframe, lazy_load
 from ..viewable import Layoutable
 from .base import PaneBase
 
+if TYPE_CHECKING:
+    from bokeh.document import Document
+    from bokeh.model import Model
+    from pyviz_comms import Comm
+
 
 def lower_camel_case_keys(attrs):
-    """Makes all the keys in a dictionary camel-cased and lower-case
+    """
+    Makes all the keys in a dictionary camel-cased and lower-case
 
     Parameters
     ----------
@@ -32,8 +44,9 @@ def lower_camel_case_keys(attrs):
         attrs[camel_key] = attrs.pop(snake_key)
 
 
-def to_camel_case(snake_case):
-    """Makes a snake case string into a camel case one
+def to_camel_case(snake_case: str) -> str:
+    """
+    Makes a snake case string into a camel case one
 
     Parameters
     -----------
@@ -51,7 +64,7 @@ def to_camel_case(snake_case):
     return output_str
 
 
-def lower_first_letter(s):
+def lower_first_letter(s: str) -> str:
     return s[:1].lower() + s[1:] if s else ''
 
 
@@ -70,7 +83,21 @@ def recurse_data(data):
 
 class DeckGL(PaneBase):
     """
-    DeckGL panes allow rendering Deck.Gl/ PyDeck plots in Panel.
+    The `DeckGL` pane renders the Deck.gl
+    JSON specification as well as PyDeck plots inside a panel.
+
+    Deck.gl is a very powerful WebGL-powered framework for visual exploratory
+    data analysis of large datasets.
+
+    Reference: https://panel.holoviz.org/reference/panes/DeckGL.html
+
+    :Example:
+
+    >>> pn.extension('deckgl')
+    >>> DeckGL(
+    ...    some_deckgl_dict_or_pydeck_object,
+    ...    mapbox_api_key=MAPBOX_KEY, height=600
+    ... )
     """
 
     mapbox_api_key = param.String(default=None, doc="""
@@ -88,29 +115,39 @@ class DeckGL(PaneBase):
     view_state = param.Dict(default={}, doc="""
         The current view state of the DeckGL plot.""")
 
-    _rename = {
+    throttle = param.Dict(default={'view': 200, 'hover': 200}, doc="""
+        Throttling timeout (in milliseconds) for view state and hover
+        events sent from the frontend.""")
+
+    _rename: ClassVar[Mapping[str, str | None]] = {
         'click_state': 'clickState', 'hover_state': 'hoverState',
         'view_state': 'viewState', 'tooltips': 'tooltip'
     }
 
-    _updates = True
+    _updates: ClassVar[bool] = True
 
-    priority = None
+    priority: ClassVar[float | bool | None] = None
 
     @classmethod
-    def applies(cls, obj):
-        if (hasattr(obj, "to_json") and hasattr(obj, "mapbox_key")
-            and hasattr(obj, "deck_widget")):
+    def applies(cls, obj: Any) -> float | bool | None:
+        if cls.is_pydeck(obj):
             return 0.8
-        elif isinstance(obj, (dict, string_types)):
+        elif isinstance(obj, (dict, str)):
             return 0
         return False
 
-    def _get_properties(self, layout=True):
+    @classmethod
+    def is_pydeck(cls, obj):
+        if 'pydeck' in sys.modules:
+            import pydeck
+            return isinstance(obj, pydeck.bindings.deck.Deck)
+        return False
+
+    def _get_properties(self, layout: bool = True):
         if self.object is None:
             data, mapbox_api_key, tooltip = {}, self.mapbox_api_key, self.tooltips
-        elif isinstance(self.object, (string_types, dict)):
-            if isinstance(self.object, string_types):
+        elif isinstance(self.object, (str, dict)):
+            if isinstance(self.object, str):
                 data = json.loads(self.object)
             else:
                 data = dict(self.object)
@@ -192,7 +229,10 @@ class DeckGL(PaneBase):
                 sources.append(cds)
             layer['data'] = sources.index(cds)
 
-    def _get_model(self, doc, root=None, parent=None, comm=None):
+    def _get_model(
+        self, doc: Document, root: Optional[Model] = None,
+        parent: Optional[Model] = None, comm: Optional[Comm] = None
+    ) -> Model:
         DeckGLPlot = lazy_load(
             'panel.models.deckgl', 'DeckGLPlot', isinstance(comm, JupyterComm), root
         )
@@ -207,7 +247,7 @@ class DeckGL(PaneBase):
         self._models[root.ref["id"]] = (model, parent)
         return model
 
-    def _update(self, ref=None, model=None):
+    def _update(self, ref: str, model: Model) -> None:
         data, properties = self._get_properties(layout=False)
         self._update_sources(data, model.data_sources)
         properties['data'] = data

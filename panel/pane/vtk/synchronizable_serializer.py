@@ -2,36 +2,24 @@ import base64
 import hashlib
 import io
 import struct
-import sys
 import time
 import zipfile
 
-from vtk.vtkCommonCore import vtkTypeUInt32Array, vtkTypeInt32Array
-from vtk.vtkFiltersGeometry import vtkCompositeDataGeometryFilter, vtkGeometryFilter
-from vtk.vtkRenderingCore import vtkColorTransferFunction
+from vtk.vtkCommonCore import vtkTypeInt32Array, vtkTypeUInt32Array
 from vtk.vtkCommonDataModel import vtkDataObject
+from vtk.vtkFiltersGeometry import (
+    vtkCompositeDataGeometryFilter, vtkGeometryFilter,
+)
+from vtk.vtkRenderingCore import vtkColorTransferFunction
 
 from .enums import TextPosition
 
-# -----------------------------------------------------------------------------
-# Python compatibility handling 2.6, 2.7, 3+
-# -----------------------------------------------------------------------------
 
-py3 = sys.version_info >= (3, 0)
+def iteritems(d, **kwargs):
+    return iter(d.items(**kwargs))
 
-if py3:
-    def iteritems(d, **kwargs):
-        return iter(d.items(**kwargs))
-else:
-    def iteritems(d, **kwargs):
-        return d.iteritems(**kwargs)
-
-if sys.version_info >= (2, 7):
-    buffer = memoryview
-    base64Encode = lambda x: base64.b64encode(x).decode('utf-8')
-else:
-    buffer = buffer
-    base64Encode = lambda x: x.encode('base64')
+buffer = memoryview
+base64Encode = lambda x: base64.b64encode(x).decode('utf-8')
 
 # -----------------------------------------------------------------------------
 # Array helpers
@@ -539,7 +527,7 @@ def extractRequiredFields(extractedFields, parent, dataset, context, requestedFi
             arrayMeta['location'] = 'pointData'
             arrayMeta['registration'] = 'setScalars'
             extractedFields.append(arrayMeta)
-        
+
     if parent.IsA("vtkGlyph3DMapper") and not context.serializeAllDataArrays:
         scaleArrayName = parent.GetInputArrayInformation(parent.SCALE).Get(vtkDataObject.FIELD_NAME())
         if scaleArrayName is not None and scaleArrayName not in [field['name'] for field in extractedFields]:
@@ -587,7 +575,7 @@ def annotationSerializer(parent, prop, propId, context, depth):
 
     context.addAnnotation(parent, prop, propId)
 
-    return None 
+    return None
 
 def genericPropSerializer(parent, prop, popId, context, depth):
     # This kind of actor has two "children" of interest, a property and a
@@ -1155,9 +1143,7 @@ def mergeToPolydataSerializer(parent, dataObject, dataObjectId, context, depth):
         gf.SetInputData(dataObject)
         gf.Update()
         dataset = gf.GetOutput()
-    elif (dataObject.IsA('vtkUnstructuredGrid') or
-          dataObject.IsA('vtkStructuredGrid') or
-          dataObject.IsA('vtkImageData')):
+    elif not dataObject.IsA('vtkPolyData'):
         gf = vtkGeometryFilter()
         gf.SetInputData(dataObject)
         gf.Update()

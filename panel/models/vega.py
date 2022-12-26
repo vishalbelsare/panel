@@ -2,12 +2,23 @@
 Defines custom VegaPlot bokeh model to render Vega json plots.
 """
 from bokeh.core.properties import (
-    Any, Bool, Dict, Enum, Instance, Nullable, String
+    Any, Bool, Dict, Enum, Instance, Int, List, Nullable, String,
 )
-from bokeh.models import LayoutDOM, ColumnDataSource
+from bokeh.events import ModelEvent
+from bokeh.models import ColumnDataSource, LayoutDOM
 
+from ..config import config
 from ..io.resources import bundled_files
 from ..util import classproperty
+
+
+class VegaEvent(ModelEvent):
+
+    event_name = 'vega_event'
+
+    def __init__(self, model, data=None):
+        self.data = data
+        super().__init__(model=model)
 
 
 class VegaPlot(LayoutDOM):
@@ -17,9 +28,9 @@ class VegaPlot(LayoutDOM):
     """
 
     __javascript_raw__ = [
-        "https://cdn.jsdelivr.net/npm/vega@5",
-        'https://cdn.jsdelivr.net/npm/vega-lite@4',
-        'https://cdn.jsdelivr.net/npm/vega-embed@6'
+        f"{config.npm_cdn}/vega@5",
+        f"{config.npm_cdn}/vega-lite@5",
+        f"{config.npm_cdn}/vega-embed@6"
     ]
 
     @classproperty
@@ -36,9 +47,9 @@ class VegaPlot(LayoutDOM):
 
     __js_require__ = {
         'paths': {
-            "vega-embed":  "https://cdn.jsdelivr.net/npm/vega-embed@6/build/vega-embed.min",
-            "vega-lite": "https://cdn.jsdelivr.net/npm/vega-lite@4/build/vega-lite.min",
-            "vega": "https://cdn.jsdelivr.net/npm/vega@5/build/vega.min"
+            "vega-embed":  f"{config.npm_cdn}/vega-embed@6/build/vega-embed.min",
+            "vega-lite": f"{config.npm_cdn}/vega-lite@5/build/vega-lite.min",
+            "vega": f"{config.npm_cdn}/vega@5/build/vega.min"
         },
         'exports': {'vega-embed': 'vegaEmbed', 'vega': 'vega', 'vega-lite': 'vl'}
     }
@@ -47,7 +58,11 @@ class VegaPlot(LayoutDOM):
 
     data_sources = Dict(String, Instance(ColumnDataSource))
 
+    events = List(String)
+
     show_actions = Bool(False)
 
     theme = Nullable(Enum('excel', 'ggplot2', 'quartz', 'vox', 'fivethirtyeight', 'dark',
                  'latimes', 'urbaninstitute', 'googlecharts', default=None))
+
+    throttle = Dict(String, Int)
